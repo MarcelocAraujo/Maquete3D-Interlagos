@@ -1,0 +1,30 @@
+FORMULA 1 HEINEKEN GRANDE PRÊMIO DE SÃO PAULO 2022 - São Paulo
+                                          Race Best Sector Times
+
+       Sector 1        TIME    Sector 2               TIME    Sector 3               TIME
+ 1 16 Charles LECLERC  18.744    63 George RUSSELL    37.565    55 Carlos SAINZ      16.941
+ 2 14 Fernando ALONSO  18.855    55 Carlos SAINZ      37.724     1 Max VERSTAPPEN    16.958
+ 3 55 Carlos SAINZ     18.869    44 Lewis HAMILTON    37.792    16 Charles LECLERC   16.966
+ 4 1 Max VERSTAPPEN    18.915    14 Fernando ALONSO   37.941    14 Fernando ALONSO   16.968
+ 5 44 Lewis HAMILTON   18.966    11 Sergio PEREZ      38.006    63 George RUSSELL    17.010
+ 6 63 George RUSSELL   18.998    16 Charles LECLERC   38.051    11 Sergio PEREZ      17.057
+ 7 18 Lance STROLL     19.107     1 Max VERSTAPPEN    38.068    31 Esteban OCON      17.077
+ 8 10 Pierre GASLY     19.123    18 Lance STROLL      38.155    44 Lewis HAMILTON    17.084
+ 9 11 Sergio PEREZ     19.128    31 Esteban OCON      38.360    77 Valtteri BOTTAS   17.108
+10 31 Esteban OCON     19.136    47 Mick SCHUMACHER   38.499     4 Lando NORRIS      17.109
+11 24 ZHOU Guanyu      19.151    77 Valtteri BOTTAS   38.698    10 Pierre GASLY      17.147
+12 6 Nicholas LATIFI   19.157    24 ZHOU Guanyu       38.770    23 Alexander ALBON   17.203
+13 5 Sebastian VETTEL  19.185     6 Nicholas LATIFI   38.818    22 Yuki TSUNODA      17.203
+14 47 Mick SCHUMACHER  19.200    22 Yuki TSUNODA      38.857     6 Nicholas LATIFI   17.210
+15 77 Valtteri BOTTAS  19.201     5 Sebastian VETTEL  38.900    24 ZHOU Guanyu       17.216
+16 4 Lando NORRIS      19.225    10 Pierre GASLY      38.940    18 Lance STROLL      17.266
+17 23 Alexander ALBON  19.263     4 Lando NORRIS      39.105    47 Mick SCHUMACHER   17.273
+18 22 Yuki TSUNODA     19.276    23 Alexander ALBON   39.114     5 Sebastian VETTEL  17.328
+
+© 2022 Formula One World Championship Limited
+The F1 FORMULA 1 logo, F1 logo, FORMULA 1, FORMULA ONE, F1, FIA FORMULA ONE WORLD CHAMPIONSHIP, GRAND PRIX and related marks are trade marks of Formula One Licensing BV, a
+Formula 1 company. The FIA logo is a trade mark of the Fédération Internationale de l'Automobile. All rights reserved.
+No part of these results/data may be reproduced, stored in a retrieval system or transmitted in any form or by any means electronic, mechanical, photocopying, recording, broadcasting or otherwise without
+prior permission of the copyright holder except for reproduction in local/national/international daily press and regular printed publications on sale to the public within 90 days of the event to which the
+results/data relate and provided that the copyright symbol and name of copyright owner appears.
+

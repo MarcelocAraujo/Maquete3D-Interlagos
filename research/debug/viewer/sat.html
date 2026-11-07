@@ -1,0 +1,15 @@
+<!doctype html><html><head><meta charset="utf-8">
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<style>html,body,#m{margin:0;height:100%} .lbl{font:10px monospace;color:#ff0;text-shadow:0 0 2px #000;white-space:nowrap}</style></head>
+<body><div id="m"></div><script>
+const q=new URLSearchParams(location.hash.slice(1));
+const map=L.map('m',{zoomSnap:0.25}).setView([+(q.get('lat')||-23.7016),+(q.get('lon')||-46.6965)],+(q.get('z')||16));
+L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',{maxZoom:20,maxNativeZoom:19,attribution:'Esri World Imagery (referência de pesquisa)'}).addTo(map);
+const show=(q.get('layers')||'edge,center,pit,gs,label,bld,fence,wall').split(',');
+fetch('overlay.geojson').then(r=>r.json()).then(g=>{
+ L.geoJSON(g,{filter:f=>show.includes(f.properties.kind||'label'),style:f=>({edge:{color:'#0ff',weight:1},center:{color:'#f0f',weight:1,dashArray:'3 3'},pit:{color:'#ff0',weight:1.5},gs:{color:'#f00',weight:1.5},bld:{color:'#fff',weight:.7,fillOpacity:0},fence:{color:'#0f0',weight:1},wall:{color:'#f80',weight:1.5}})[f.properties.kind]||{},
+ pointToLayer:(f,ll)=>L.marker(ll,{icon:L.divIcon({className:'lbl',html:f.properties.label,iconSize:null})}),
+ onEachFeature:(f,l)=>{if(f.properties.label&&f.geometry.type!=='Point'&&show.includes('plabel'))l.bindTooltip(f.properties.label,{permanent:true,className:'lbl',direction:'center'})}}).addTo(map);});
+window.addEventListener('hashchange',()=>location.reload());
+</script></body></html>

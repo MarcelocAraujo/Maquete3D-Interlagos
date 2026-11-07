@@ -1,0 +1,8 @@
+[out:json][timeout:90];
+(
+  way["highway"="raceway"](-23.7150,-46.7080,-23.6930,-46.6890);
+  relation["highway"="raceway"](-23.7150,-46.7080,-23.6930,-46.6890);
+  relation["sport"="motor"](-23.7150,-46.7080,-23.6930,-46.6890);
+  way["area:highway"](-23.7150,-46.7080,-23.6930,-46.6890);
+);
+out body geom;

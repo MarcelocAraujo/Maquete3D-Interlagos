@@ -1,0 +1,477 @@
+   FORMULA 1 MSC CRUISES GRANDE PRÊMIO DE SÃO PAULO 2025 - São Paulo
+                                                     Race Lap Analysis
+
+1  Max VERSTAPPEN                  4 Lando NORRIS                  5 Gabriel BORTOLETO
+
+   LAP      TIME   LAP      TIME   LAP      TIME   LAP      TIME   LAP  TIME            LAP  TIME
+    1    14:04:41  37    1:14.006   1    14:04:32  37    1:14.187
+    2    2:00.413  38    1:13.528   2    1:41.996  38    1:14.275
+    3    1:49.007  39    1:13.586   3    1:54.600  39    1:14.304
+    4    1:46.620  40    1:13.678   4    1:49.769  40    1:14.355
+    5    1:47.889  41    1:13.659   5    2:03.590  41    1:14.495
+    6    1:18.495  42    1:13.689   6    1:14.539  42    1:14.493
+    7P   1:47.461  43    1:13.415   7    1:40.233  43    1:14.434
+    8    1:44.348  44    1:13.552   8    1:42.681  44    1:14.371
+    9    1:13.141  45    1:13.844   9    1:13.489  45    1:14.431
+         1:13.049  46    1:13.843        1:13.773  46    1:14.452
+   10    1:13.735  47    1:14.022  10    1:14.357  47    1:14.510
+   11    1:14.816  48    1:13.810  11    1:14.360  48    1:14.386
+   12    1:15.065  49    1:13.717  12    1:14.631  49    1:14.379
+   13    1:15.081  50    1:13.848  13    1:14.740  50 P  1:17.963
+   14    1:15.354  51    1:13.658  14    1:14.572  51    1:32.381
+   15    1:15.725  52    1:13.992  15    1:14.831  52    1:13.632
+   16    1:15.809  53    1:14.128  16    1:14.771  53    1:13.611
+   17    1:15.048  54 P  1:17.514  17    1:14.773  54    1:13.471
+   18    1:15.170  55    1:30.317  18    1:14.807  55    1:13.808
+   19    1:15.162  56    1:12.447  19    1:14.899  56    1:13.371
+   20    1:14.829  57    1:12.582  20    1:14.642  57    1:13.356
+   21    1:14.948  58    1:12.966  21    1:14.742  58    1:13.350
+   22    1:14.727  59    1:12.833  22    1:14.850  59    1:13.596
+   23    1:14.769  60    1:13.212  23    1:14.759  60    1:13.526
+   24    1:14.828  61    1:13.136  24    1:14.977  61    1:13.447
+   25    1:15.193  62    1:13.296  25    1:15.031  62    1:13.689
+   26    1:14.912  63    1:13.401  26    1:14.801  63    1:13.211
+   27    1:15.306  64    1:13.216  27    1:14.887  64    1:13.177
+   28    1:15.165  65    1:13.124  28    1:14.685  65    1:13.346
+   29    1:14.965  66    1:13.469  29    1:18.720  66    1:13.040
+   30    1:15.164  67    1:13.463  30 P  1:32.876  67    1:13.637
+   31    1:15.330  68    1:13.536  31    1:14.233  68    1:13.411
+   32    1:16.145  69    1:13.472  32    1:14.187  69    1:13.297
+   33    1:19.344  70    1:13.840  33    1:14.217  70    1:13.567
+   34 P  1:31.337  71    1:13.699  34    1:14.147  71    1:13.437
+   35    1:13.307                  35    1:13.968
+   36                              36
+
+                                                                                                                                                                                              Page 1 of 7
+
+The F1 FORMULA 1 logo, F1 logo, FORMULA 1, FORMULA ONE, F1, FIA FORMULA ONE WORLD CHAMPIONSHIP, GRAND PRIX and related marks are trade marks of Formula One Licensing BV, a
+Formula 1 company. The FIA logo is a trade mark of the Fédération Internationale de l'Automobile. All rights reserved.
+No part of these results/data may be reproduced, stored in a retrieval system or transmitted in any form or by any means electronic, mechanical, photocopying, recording, broadcasting or otherwise without
+prior permission of the copyright holder except for reproduction in local/national/international daily press and regular printed publications on sale to the public within 90 days of the event to which the
+results/data relate and provided that the copyright symbol and name of copyright owner appears.
+
+© 2025 Formula One World Championship Limited
+   FORMULA 1 MSC CRUISES GRANDE PRÊMIO DE SÃO PAULO 2025 - São Paulo
+                                                     Race Lap Analysis
+
+6  Isack HADJAR                    10 Pierre GASLY                  12 Kimi ANTONELLI
+
+   LAP      TIME   LAP      TIME   LAP      TIME    LAP      TIME   LAP     TIME       LAP      TIME
+    1    14:04:35  37 P  1:18.786   1    14:04:37   37    1:15.054   1    14:04:33     37    1:14.254
+    2    1:46.339  38    1:32.058   2    1:51.215   38    1:15.387   2    1:42.524     38    1:14.545
+    3    1:53.008  39    1:15.015   3    1:52.063   39 P  1:18.463   3    1:53.773     39    1:14.408
+    4    1:49.148  40    1:13.694   4    1:48.619   40    1:32.407   4    1:49.802     40    1:14.659
+    5    1:58.853  41    1:14.040   5    1:54.339   41    1:14.774   5    2:03.198     41    1:14.552
+    6    1:17.055  42    1:13.983   6    1:18.106   42    1:13.736   6    1:16.547     42    1:14.359
+    7    1:41.086  43    1:15.468   7    1:43.042   43    1:14.029   7    1:40.834     43    1:14.375
+    8    1:41.363  44    1:14.341   8    1:39.247   44    1:14.281   8    1:41.434     44    1:14.383
+    9    1:14.725  45    1:14.280   9    1:15.653   45    1:14.128   9    1:14.268     45    1:14.530
+         1:14.574  46    1:14.457        1:14.707   46    1:14.113        1:14.127     46    1:14.605
+   10    1:14.553  47    1:14.653  10    1:14.672   47    1:14.447  10    1:14.586     47 P  1:19.038
+   11    1:16.284  48    1:14.753  11    1:15.674   48    1:14.607  11    1:14.646     48    1:33.004
+   12    1:15.770  49    1:15.037  12    1:16.208   49    1:15.086  12    1:15.060     49    1:13.528
+   13    1:15.546  50    1:14.663  13    1:15.919   50    1:14.576  13    1:15.101     50    1:13.473
+   14    1:15.867  51    1:14.755  14    1:15.877   51    1:14.878  14    1:15.164     51    1:13.307
+   15    1:15.880  52    1:15.149  15    1:15.955   52    1:14.958  15    1:15.089     52    1:13.123
+   16    1:16.310  53    1:14.655  16    1:16.148   53    1:14.780  16    1:15.387     53    1:13.354
+   17    1:19.726  54    1:14.687  17    1:19.740   54    1:14.553  17    1:15.287     54    1:13.299
+   18 P  1:34.522  55    1:14.595  18 P  1:32.147   55    1:14.534  18    1:15.294     55    1:13.543
+   19    1:14.254  56    1:14.220  19    1:14.027   56    1:14.518  19    1:15.501     56    1:13.550
+   20    1:14.766  57    1:14.328  20    1:14.870   57    1:14.358  20    1:19.328     57    1:13.599
+   21    1:14.401  58    1:14.514  21    1:14.657   58    1:14.411  21 P  1:32.750     58    1:13.609
+   22    1:14.540  59    1:14.576  22    1:14.229   59    1:14.529  22    1:13.672     59    1:13.680
+   23    1:14.742  60    1:14.715  23    1:14.780   60    1:14.711  23    1:14.724     60    1:13.835
+   24    1:14.773  61    1:14.406  24    1:14.799   61    1:14.541  24    1:15.368     61    1:13.867
+   25    1:15.110  62    1:14.316  25    1:14.739   62    1:14.309  25    1:13.960     62    1:13.855
+   26    1:15.776  63    1:14.411  26    1:16.199   63    1:14.405  26    1:14.048     63    1:13.622
+   27    1:15.399  64    1:14.298  27    1:15.264   64    1:14.171  27    1:15.042     64    1:13.440
+   28    1:15.188  65    1:14.498  28    1:15.119   65    1:14.560  28    1:15.239     65    1:13.731
+   29    1:15.093  66    1:15.223  29    1:15.170   66    1:15.062  29    1:14.012     66    1:13.786
+   30    1:14.998  67    1:15.575  30    1:15.137   67    1:15.612  30    1:14.318     67    1:14.043
+   31    1:15.148  68    1:15.278  31    1:15.102   68    1:15.403  31    1:14.601     68    1:13.514
+   32    1:14.852  69    1:15.364  32    1:14.737   69    1:15.318  32    1:14.505     69    1:13.614
+   33    1:15.583  70    1:15.418  33    1:15.769   70    1:15.943  33    1:14.752     70    1:13.733
+   34    1:15.685  71    1:17.118  34    1:15.672   71    1:17.029  34    1:14.605     71    1:13.977
+   35    1:14.905                  35    1:15.022                   35    1:14.575
+   36                              36                               36
+
+                                                                                                                                                                                              Page 2 of 7
+
+The F1 FORMULA 1 logo, F1 logo, FORMULA 1, FORMULA ONE, F1, FIA FORMULA ONE WORLD CHAMPIONSHIP, GRAND PRIX and related marks are trade marks of Formula One Licensing BV, a
+Formula 1 company. The FIA logo is a trade mark of the Fédération Internationale de l'Automobile. All rights reserved.
+No part of these results/data may be reproduced, stored in a retrieval system or transmitted in any form or by any means electronic, mechanical, photocopying, recording, broadcasting or otherwise without
+prior permission of the copyright holder except for reproduction in local/national/international daily press and regular printed publications on sale to the public within 90 days of the event to which the
+results/data relate and provided that the copyright symbol and name of copyright owner appears.
+
+© 2025 Formula One World Championship Limited
+FORMULA 1 MSC CRUISES GRANDE PRÊMIO DE SÃO PAULO 2025 - São Paulo
+                                                  Race Lap Analysis
+
+14 Fernando ALONSO                  16 Charles LECLERC                 18 Lance STROLL
+
+LAP      TIME       LAP      TIME   LAP  TIME           LAP    TIME    LAP     TIME     LAP      TIME
+ 1    14:04:38      37    1:14.449                           1:50.062   1    14:04:40   37    1:15.533
+ 2    1:51.123      38    1:14.746  1    14:04:33       4    2:01.899   2    1:56.064   38    1:14.836
+ 3    1:52.471      39    1:14.858                                      3    1:50.806   39    1:14.279
+ 4    1:48.514      40    1:15.107  2    1:43.560       5               4    1:46.901   40    1:14.563
+ 5    1:53.761      41    1:15.469                                      5    1:50.904   41    1:14.898
+ 6    1:18.532      42    1:15.786  3    1:53.343                       6    1:28.766   42    1:14.930
+ 7    1:44.221      43    1:15.213                                      7    1:45.977   43    1:15.172
+ 8    1:38.894      44    1:15.054                                      8    1:35.556   44    1:14.832
+ 9    1:15.722      45    1:15.982                                      9    1:15.521   45    1:14.554
+      1:14.924      46 P  1:18.872                                           1:14.536   46    1:14.560
+10    1:15.166      47    1:31.847                                     10    1:14.655   47    1:15.004
+11    1:15.331      48    1:13.312                                     11    1:15.336   48    1:14.846
+12    1:15.888      49    1:13.668                                     12    1:15.258   49    1:14.843
+13    1:16.173      50    1:13.834                                     13    1:15.576   50    1:14.764
+14    1:15.983      51    1:13.954                                     14    1:15.609   51    1:14.868
+15    1:15.900      52    1:14.071                                     15    1:15.412   52    1:16.752
+16    1:16.556      53    1:14.010                                     16    1:15.642   53    1:15.244
+17    1:16.253      54    1:14.202                                     17    1:15.614   54 P  1:19.447
+18    1:15.808      55    1:14.053                                     18    1:15.670   55    1:31.227
+19    1:16.084      56    1:14.197                                     19    1:15.811   56    1:13.094
+20    1:16.590      57    1:14.241                                     20    1:15.876   57    1:13.420
+21    1:16.293      58    1:14.270                                     21    1:16.267   58    1:13.251
+22    1:15.926      59    1:14.315                                     22    1:16.444   59    1:13.425
+23    1:16.130      60    1:15.039                                     23    1:15.655   60    1:13.856
+24    1:16.335      61    1:14.483                                     24    1:15.880   61    1:13.491
+25    1:16.374      62    1:13.867                                     25    1:16.451   62    1:13.374
+26    1:16.123      63    1:14.138                                     26    1:15.650   63    1:13.515
+27    1:19.939      64    1:14.091                                     27    1:16.059   64    1:13.569
+28 P  1:33.704      65    1:14.199                                     28    1:19.662   65    1:13.403
+29    1:14.591      66    1:14.509                                     29 P  1:33.498   66    1:13.609
+30    1:14.343      67    1:14.425                                     30    1:14.394   67    1:14.175
+31    1:14.374      68    1:13.906                                     31    1:14.375   68    1:14.163
+32    1:14.679      69    1:14.067                                     32    1:14.716   69    1:14.272
+33    1:14.654      70    1:14.167                                     33    1:14.546   70    1:14.754
+34    1:14.553      71    1:14.454                                     34    1:14.549   71    1:14.996
+35    1:14.518                                                         35    1:14.414
+36                                                                     36
+
+                                                                                                                                                                                              Page 3 of 7
+
+The F1 FORMULA 1 logo, F1 logo, FORMULA 1, FORMULA ONE, F1, FIA FORMULA ONE WORLD CHAMPIONSHIP, GRAND PRIX and related marks are trade marks of Formula One Licensing BV, a
+Formula 1 company. The FIA logo is a trade mark of the Fédération Internationale de l'Automobile. All rights reserved.
+No part of these results/data may be reproduced, stored in a retrieval system or transmitted in any form or by any means electronic, mechanical, photocopying, recording, broadcasting or otherwise without
+prior permission of the copyright holder except for reproduction in local/national/international daily press and regular printed publications on sale to the public within 90 days of the event to which the
+results/data relate and provided that the copyright symbol and name of copyright owner appears.
+
+© 2025 Formula One World Championship Limited
+FORMULA 1 MSC CRUISES GRANDE PRÊMIO DE SÃO PAULO 2025 - São Paulo
+                                                  Race Lap Analysis
+
+22 Yuki TSUNODA                  23 Alexander ALBON                  27 Nico HULKENBERG
+
+LAP      TIME    LAP      TIME   LAP      TIME       LAP      TIME   LAP  TIME           LAP     TIME
+ 1    14:04:39   37    1:14.809   1    14:04:38      37    1:13.495                           1:32.054
+ 2P   1:59.580   38    1:15.042   2    1:51.703      38    1:13.875  1    14:04:38       37   1:13.773
+ 3    1:54.737   39    1:15.476   3    1:52.479      39    1:13.683                           1:13.474
+ 4    1:46.686   40    1:15.677   4    1:48.374      40    1:14.502  2    1:54.736       38   1:14.766
+ 5    1:45.157   41    1:15.272   5    1:53.023      41    1:14.924                           1:13.910
+ 6    1:19.061   42    1:16.297   6    1:17.950      42    1:14.517  3    1:52.587       39   1:14.337
+ 7    1:44.745   43    1:15.385   7    1:43.396      43    1:14.872                           1:14.548
+ 8    1:37.949   44    1:15.269   8    1:39.163      44    1:14.768  4    1:47.063       40   1:14.683
+ 9    1:14.911   45    1:14.976   9    1:15.523      45    1:14.683                           1:14.534
+      1:15.027   46    1:15.142        1:14.525      46    1:14.603  5    1:51.395       41   1:14.500
+10    1:15.320   47 P  1:18.697  10    1:15.039      47    1:15.614                           1:15.136
+11    1:15.428   48    1:43.456  11    1:15.488      48    1:14.876  6    1:18.426       42   1:14.684
+12    1:15.705   49    1:12.774  12    1:16.052      49    1:14.896                           1:16.238
+13    1:16.220   50    1:12.847  13    1:16.040      50    1:14.961  7    1:44.699       43   1:14.791
+14    1:16.479   51    1:13.458  14    1:15.996      51    1:14.977                           1:14.578
+15    1:15.839   52    1:13.814  15    1:15.844      52    1:14.960  8    1:38.885       44   1:14.848
+16    1:16.249   53    1:13.372  16    1:16.245      53    1:15.021                           1:15.000
+17    1:16.171   54    1:13.631  17    1:15.859      54    1:15.285  9    1:14.979       45   1:14.604
+18    1:15.747   55    1:13.774  18    1:15.626      55 P  1:18.437                           1:14.609
+19    1:15.844   56    1:13.761  19    1:15.707      56    1:31.062  10   1:15.135       46   1:14.851
+20    1:16.152   57    1:13.846  20    1:16.246      57    1:12.509                           1:14.683
+21    1:16.441   58    1:13.923  21    1:15.853      58    1:12.655  11   1:15.189       47   1:14.526
+22    1:16.375   59    1:13.970  22    1:15.732      59    1:12.400                           1:14.678
+23    1:19.809   60    1:13.791  23    1:15.803      60    1:13.249  12   1:15.530       48   1:14.923
+24 P  1:44.172   61    1:13.996  24    1:15.652      61    1:13.329                           1:14.781
+25    1:14.039   62    1:13.853  25    1:15.956      62    1:13.011  13   1:15.768       49   1:14.945
+26    1:14.019   63    1:13.821  26    1:15.687      63    1:13.345                           1:14.577
+27    1:14.273   64    1:14.047  27    1:15.751      64    1:13.314  14   1:15.846       50   1:14.884
+28    1:14.481   65    1:14.099  28    1:15.630      65    1:13.849                           1:15.113
+29    1:14.919   66    1:14.076  29    1:16.068      66    1:13.895  15   1:16.284       51   1:16.553
+30    1:15.814   67    1:14.020  30    1:15.673      67    1:14.466                           1:15.545
+31    1:14.883   68    1:13.891  31    1:16.378      68    1:14.002  16   1:15.828       52   1:15.459
+32    1:14.936   69    1:14.133  32    1:16.412      69    1:14.440                           1:15.533
+33    1:15.036   70    1:14.265  33    1:17.045      70    1:15.582  17   1:16.920       53   1:16.389
+34    1:14.929   71    1:14.414  34    1:20.772      71    1:16.983                           1:16.754
+35    1:15.059                   35 P  1:31.620                      18   1:16.017       54
+36                               36
+                                                                     19   1:15.639       55
+
+                                                                     20   1:15.942       56
+
+                                                                     21   1:15.064       57
+
+                                                                     22   1:15.603       58
+
+                                                                     23   1:15.459       59
+
+                                                                     24   1:15.153       60
+
+                                                                     25   1:15.484       61
+
+                                                                     26   1:15.886       62
+
+                                                                     27   1:15.691       63
+
+                                                                     28   1:15.552       64
+
+                                                                     29   1:16.229       65
+
+                                                                     30   1:15.705       66
+
+                                                                     31   1:15.419       67
+
+                                                                     32   1:16.344       68
+
+                                                                     33   1:16.378       69
+
+                                                                     34   1:15.474       70
+
+                                                                     35   1:15.618       71
+
+                                                                     36 P 1:18.996
+
+                                                                                                                                                                                              Page 4 of 7
+
+The F1 FORMULA 1 logo, F1 logo, FORMULA 1, FORMULA ONE, F1, FIA FORMULA ONE WORLD CHAMPIONSHIP, GRAND PRIX and related marks are trade marks of Formula One Licensing BV, a
+Formula 1 company. The FIA logo is a trade mark of the Fédération Internationale de l'Automobile. All rights reserved.
+No part of these results/data may be reproduced, stored in a retrieval system or transmitted in any form or by any means electronic, mechanical, photocopying, recording, broadcasting or otherwise without
+prior permission of the copyright holder except for reproduction in local/national/international daily press and regular printed publications on sale to the public within 90 days of the event to which the
+results/data relate and provided that the copyright symbol and name of copyright owner appears.
+
+© 2025 Formula One World Championship Limited
+FORMULA 1 MSC CRUISES GRANDE PRÊMIO DE SÃO PAULO 2025 - São Paulo
+                                                  Race Lap Analysis
+
+30 Liam LAWSON                 31 Esteban OCON                  43 Franco COLAPINTO
+
+LAP  TIME       LAP    TIME    LAP     TIME     LAP     TIME    LAP     TIME         LAP      TIME
+                     1:15.793   1   14:04:42    37    1:15.289   1    14:04:40       37    1:14.417
+1    14:04:35   37   1:14.837   2   2:00.336    38    1:15.165   2    1:58.185       38    1:16.046
+                     1:14.629   3   1:48.726    39    1:15.320   3    1:49.957       39    1:14.745
+2    1:47.670   38   1:14.674   4   1:46.784    40    1:15.388   4    1:46.598       40    1:14.663
+                     1:15.305   5   1:47.402    41    1:15.110   5    1:49.687       41    1:14.970
+3    1:53.614   39   1:14.733   6   1:19.208    42    1:15.165   6    1:19.463       42    1:16.380
+                     1:14.440   7   1:45.147    43    1:15.009   7    1:44.125       43 P  1:19.598
+4    1:48.804   40   1:14.599   8P  1:41.912    44    1:15.190   8    1:38.845       44    1:34.676
+                     1:14.542   9   1:33.352    45    1:15.067   9    1:15.510       45    1:12.816
+5    1:56.919   41   1:14.951       1:13.481    46    1:15.097        1:15.342       46    1:13.363
+                     1:15.062  10   1:14.204    47 P  1:20.583  10    1:15.439       47    1:14.181
+6    1:17.329   42   1:14.925  11   1:14.512    48    1:32.569  11    1:15.489       48    1:14.034
+                     1:14.908  12   1:14.672    49    1:13.688  12    1:16.069       49    1:13.795
+7    1:42.334   43   1:15.648  13   1:15.017    50    1:13.571  13    1:16.473       50    1:13.794
+                     1:15.590  14   1:15.234    51    1:13.745  14    1:16.704       51    1:14.037
+8    1:40.510   44   1:14.871  15   1:15.144    52    1:13.610  15    1:16.245       52    1:14.134
+                     1:14.954  16   1:15.583    53    1:13.767  16    1:16.103       53    1:14.124
+9    1:15.547   45   1:15.380  17   1:15.518    54    1:13.816  17    1:15.752       54    1:14.044
+                     1:15.911  18   1:15.803    55    1:13.974  18    1:15.867       55    1:14.112
+10   1:14.318   46   1:15.363  19   1:15.177    56    1:13.749  19    1:15.940       56    1:14.020
+                     1:16.131  20   1:15.094    57    1:13.923  20    1:15.943       57    1:14.127
+11   1:14.938   47   1:15.259  21   1:17.174    58    1:13.987  21    1:16.161       58    1:13.967
+                     1:15.195  22   1:15.889    59    1:13.875  22    1:16.066       59    1:14.908
+12   1:15.683   48   1:15.417  23   1:15.375    60    1:14.040  23    1:16.443       60    1:14.497
+                     1:15.503  24   1:15.485    61    1:13.778  24    1:15.987       61    1:14.300
+13   1:16.722   49   1:15.266  25   1:15.497    62    1:13.924  25    1:16.006       62    1:14.033
+                     1:15.154  26   1:15.483    63    1:14.051  26    1:16.581       63    1:13.953
+14   1:15.956   50   1:14.981  27   1:15.502    64    1:13.912  27    1:16.059       64    1:13.972
+                     1:15.385  28   1:15.636    65    1:13.907  28    1:19.686       65    1:14.187
+15   1:15.823   51   1:16.435  29   1:15.355    66    1:14.650  29 P  1:32.679       66    1:14.003
+                     1:15.555  30   1:15.335    67    1:14.487  30    1:14.429       67    1:14.285
+16   1:16.016   52   1:15.364  31   1:15.371    68    1:13.993  31    1:14.301       68    1:14.110
+                     1:15.584  32   1:15.144    69    1:15.114  32    1:14.622       69    1:14.287
+17   1:15.996   53   1:15.815  33   1:15.523    70    1:16.387  33    1:14.573       70    1:14.779
+                     1:17.103  34   1:15.595    71    1:17.064  34    1:14.504       71    1:14.857
+18   1:15.930   54             35   1:15.277                    35    1:14.751
+                               36                               36
+19 P 1:19.832   55
+
+20   1:32.394   56
+
+21   1:14.029   57
+
+22   1:14.760   58
+
+23   1:14.535   59
+
+24   1:14.910   60
+
+25   1:14.662   61
+
+26   1:14.946   62
+
+27   1:15.370   63
+
+28   1:15.412   64
+
+29   1:15.166   65
+
+30   1:15.203   66
+
+31   1:14.841   67
+
+32   1:15.692   68
+
+33   1:15.093   69
+
+34   1:15.224   70
+
+35   1:15.422   71
+
+36   1:15.546
+
+                                                                                                                                                                                              Page 5 of 7
+
+The F1 FORMULA 1 logo, F1 logo, FORMULA 1, FORMULA ONE, F1, FIA FORMULA ONE WORLD CHAMPIONSHIP, GRAND PRIX and related marks are trade marks of Formula One Licensing BV, a
+Formula 1 company. The FIA logo is a trade mark of the Fédération Internationale de l'Automobile. All rights reserved.
+No part of these results/data may be reproduced, stored in a retrieval system or transmitted in any form or by any means electronic, mechanical, photocopying, recording, broadcasting or otherwise without
+prior permission of the copyright holder except for reproduction in local/national/international daily press and regular printed publications on sale to the public within 90 days of the event to which the
+results/data relate and provided that the copyright symbol and name of copyright owner appears.
+
+© 2025 Formula One World Championship Limited
+FORMULA 1 MSC CRUISES GRANDE PRÊMIO DE SÃO PAULO 2025 - São Paulo
+                                                  Race Lap Analysis
+
+44 Lewis HAMILTON                  55 Carlos SAINZ                  63 George RUSSELL
+
+LAP      TIME      LAP      TIME   LAP      TIME    LAP     TIME    LAP     TIME       LAP      TIME
+ 1    14:04:40     20    1:16.095   1    14:04:38   37    1:15.265   1    14:04:36     37    1:13.419
+ 2P   2:05.836     21    1:15.452   2    1:52.471   38 P  1:18.817   2    1:49.497     38    1:13.560
+ 3    2:00.497     22    1:15.409   3    1:52.755   39    1:30.500   3    1:52.274     39    1:13.755
+ 4    1:33.973     23    1:16.476   4    1:47.743   40    1:13.852   4    1:49.183     40    1:13.603
+ 5    1:44.611     24    1:15.721   5    1:52.415   41    1:14.541   5    1:55.996     41    1:13.842
+ 6    1:19.573     25    1:16.093   6    1:18.464   42    1:14.203   6    1:17.565     42    1:13.838
+ 7    1:45.180     26    1:15.650   7    1:44.397   43    1:13.981   7    1:42.478     43    1:13.916
+ 8    1:37.867     27    1:15.978   8    1:38.479   44    1:14.231   8    1:40.199     44    1:14.208
+ 9    1:14.982     28    1:15.612   9    1:14.985   45    1:14.238   9    1:14.483     45    1:14.383
+      1:15.019     29    1:15.580        1:14.897   46    1:14.007        1:14.119     46    1:14.396
+10    1:16.074     30    1:15.685  10    1:14.938   47    1:14.316  10    1:14.365     47    1:14.533
+11    1:15.606     31    1:15.546  11    1:15.340   48    1:14.656  11    1:14.832     48 P  1:17.843
+12    1:16.568     32 P  1:20.294  12    1:16.070   49    1:14.926  12    1:15.252     49    1:31.078
+13    1:20.101     33    1:41.262  13    1:16.225   50    1:15.026  13    1:15.022     50    1:13.349
+14 P  1:32.848     34    1:14.832  14    1:16.055   51    1:14.675  14    1:15.225     51    1:13.415
+15    1:14.273     35    1:13.844  15    1:16.123   52    1:15.430  15    1:15.337     52    1:13.097
+16    1:14.473     36    1:14.279  16    1:20.066   53    1:15.318  16    1:15.495     53    1:13.283
+17    1:14.747     37 P  1:24.144  17 P  1:34.423   54    1:15.529  17    1:15.149     54    1:13.601
+18    1:15.240                     18    1:13.683   55    1:14.573  18    1:15.182     55    1:13.520
+19                                 19    1:14.472   56    1:14.332  19    1:15.216     56    1:13.466
+                                   20    1:14.459   57    1:14.504  20    1:15.293     57    1:13.588
+                                   21    1:14.590   58    1:14.570  21    1:15.435     58    1:13.747
+                                   22    1:14.795   59    1:14.489  22    1:15.325     59    1:13.773
+                                   23    1:15.033   60    1:14.491  23    1:15.319     60    1:13.737
+                                   24    1:14.902   61    1:14.419  24    1:15.414     61    1:13.811
+                                   25    1:15.153   62    1:14.308  25    1:15.476     62    1:13.762
+                                   26    1:15.160   63    1:14.679  26    1:15.441     63    1:14.943
+                                   27    1:15.416   64    1:14.416  27    1:15.422     64    1:13.960
+                                   28    1:15.179   65    1:14.711  28    1:15.204     65    1:14.002
+                                   29    1:15.281   66    1:14.808  29    1:15.140     66    1:13.975
+                                   30    1:15.114   67    1:16.888  30    1:15.348     67    1:13.849
+                                   31    1:15.423   68    1:15.118  31    1:15.376     68    1:14.049
+                                   32    1:15.272   69    1:15.287  32    1:15.315     69    1:13.517
+                                   33    1:15.370   70    1:15.045  33    1:19.220     70    1:13.759
+                                   34    1:15.461   71    1:15.692  34 P  1:31.397     71    1:13.901
+                                   35    1:15.608                   35    1:13.218
+                                   36                               36
+
+                                                                                                                                                                                              Page 6 of 7
+
+The F1 FORMULA 1 logo, F1 logo, FORMULA 1, FORMULA ONE, F1, FIA FORMULA ONE WORLD CHAMPIONSHIP, GRAND PRIX and related marks are trade marks of Formula One Licensing BV, a
+Formula 1 company. The FIA logo is a trade mark of the Fédération Internationale de l'Automobile. All rights reserved.
+No part of these results/data may be reproduced, stored in a retrieval system or transmitted in any form or by any means electronic, mechanical, photocopying, recording, broadcasting or otherwise without
+prior permission of the copyright holder except for reproduction in local/national/international daily press and regular printed publications on sale to the public within 90 days of the event to which the
+results/data relate and provided that the copyright symbol and name of copyright owner appears.
+
+© 2025 Formula One World Championship Limited
+FORMULA 1 MSC CRUISES GRANDE PRÊMIO DE SÃO PAULO 2025 - São Paulo
+                                                  Race Lap Analysis
+
+81 Oscar PIASTRI                  87 Oliver BEARMAN
+
+LAP  TIME         LAP      TIME   LAP      TIME      LAP      TIME
+                  37    1:15.096   1    14:04:37     37    1:15.095
+1    14:04:34     38 P  1:20.264   2    1:49.412     38    1:14.738
+                  39    1:43.296   3    1:52.534     39    1:14.608
+2    1:45.122     40    1:14.164   4    1:48.538     40    1:14.487
+                  41    1:13.477   5    1:55.429     41    1:14.390
+3    1:51.843     42    1:13.299   6    1:18.071     42 P  1:18.073
+                  43    1:13.156   7    1:42.672     43    1:33.749
+4    1:50.295     44    1:13.218   8    1:39.712     44    1:13.987
+                  45    1:13.530   9    1:15.380     45    1:13.910
+5    2:00.693     46    1:13.577        1:14.312     46    1:13.600
+                  47    1:13.988  10    1:14.717     47    1:14.101
+6    1:15.276     48    1:13.739  11    1:15.664     48    1:13.483
+                  49    1:13.806  12    1:15.510     49    1:14.774
+7    1:40.689     50    1:13.891  13    1:15.644     50    1:14.083
+                  51 P  1:17.965  14    1:15.723     51    1:13.992
+8    1:41.242     52    1:31.571  15    1:15.978     52    1:13.961
+                  53    1:12.970  16    1:20.163     53    1:14.018
+9    1:14.319     54    1:12.742  17 P  1:31.777     54    1:14.684
+                  55    1:14.159  18    1:13.823     55    1:14.243
+10   1:14.133     56    1:12.853  19    1:14.213     56    1:14.203
+                  57    1:12.978  20    1:14.350     57    1:14.062
+11   1:14.615     58    1:13.089  21    1:14.702     58    1:14.363
+                  59    1:13.015  22    1:14.452     59    1:14.197
+12   1:14.646     60    1:13.264  23    1:14.640     60    1:14.080
+                  61    1:13.100  24    1:15.158     61    1:13.777
+13   1:14.704     62    1:13.075  25    1:15.098     62    1:13.975
+                  63    1:13.196  26    1:15.099     63    1:14.014
+14   1:15.045     64    1:13.094  27    1:15.303     64    1:13.520
+                  65    1:13.576  28    1:15.090     65    1:13.987
+15   1:14.968     66    1:13.793  29    1:14.906     66    1:13.974
+                  67    1:13.734  30    1:14.756     67    1:13.694
+16   1:15.119     68    1:13.661  31    1:15.310     68    1:13.952
+                  69    1:13.342  32    1:14.860     69    1:13.813
+17   1:15.224     70    1:13.702  33    1:16.043     70    1:14.317
+                  71    1:13.916  34    1:14.901     71    1:15.252
+18   1:15.142                     35    1:14.768
+                                  36
+19   1:15.104
+
+20   1:15.150
+
+21   1:14.803
+
+22   1:15.168
+
+23   1:15.009
+
+24   1:15.008
+
+25   1:15.281
+
+26   1:15.082
+
+27   1:15.009
+
+28   1:15.245
+
+29   1:15.115
+
+30   1:15.038
+
+31   1:14.992
+
+32   1:15.135
+
+33   1:14.870
+
+34   1:15.419
+
+35   1:15.048
+
+36   1:15.967
+
+                                                                                                                                                                                              Page 7 of 7
+
+The F1 FORMULA 1 logo, F1 logo, FORMULA 1, FORMULA ONE, F1, FIA FORMULA ONE WORLD CHAMPIONSHIP, GRAND PRIX and related marks are trade marks of Formula One Licensing BV, a
+Formula 1 company. The FIA logo is a trade mark of the Fédération Internationale de l'Automobile. All rights reserved.
+No part of these results/data may be reproduced, stored in a retrieval system or transmitted in any form or by any means electronic, mechanical, photocopying, recording, broadcasting or otherwise without
+prior permission of the copyright holder except for reproduction in local/national/international daily press and regular printed publications on sale to the public within 90 days of the event to which the
+results/data relate and provided that the copyright symbol and name of copyright owner appears.
+
+© 2025 Formula One World Championship Limited
+

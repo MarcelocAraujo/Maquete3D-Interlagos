@@ -1,0 +1,30 @@
+FORMULA 1 HEINEKEN GRANDE PRÊMIO DE SÃO PAULO 2022 - São Paulo
+                                               Race Fastest Laps
+
+     NO DRIVER         NAT ENTRANT                                    TIME     ON GAP     INT    KM/H TIME OF DAY
+ 1 63 George RUSSELL          Mercedes-AMG Petronas F1 Team          1:13.785  61               210.237 16:28:58
+ 2 44 Lewis HAMILTON          Mercedes-AMG Petronas F1 Team          1:13.942  63 0.157  0.157  209.791 16:31:27
+ 3 55 Carlos SAINZ            Scuderia Ferrari                       1:13.953  65 0.168  0.011  209.760 16:33:58
+ 4 14 Fernando ALONSO         BWT Alpine F1 Team                     1:14.164  62 0.379  0.211  209.163 16:30:18
+ 5 1 Max VERSTAPPEN           Oracle Red Bull Racing                 1:14.195  64 0.410  0.031  209.076 16:32:49
+ 6 16 Charles LECLERC         Scuderia Ferrari                       1:14.253  63 0.468  0.058  208.912 16:31:31
+ 7 11 Sergio PEREZ            Oracle Red Bull Racing                 1:14.283  62 0.498  0.030  208.828 16:30:16
+ 8 18 Lance STROLL            Aston Martin Aramco Cognizant F1 Team  1:14.831  50 1.046  0.548  207.299 16:11:50
+ 9 31 Esteban OCON            BWT Alpine F1 Team                     1:15.093  65 1.308  0.262  206.575 16:34:07
+10 47 Mick SCHUMACHER         Haas F1 Team                           1:15.251  63 1.466  0.158  206.142 16:31:41
+11 6 Nicholas LATIFI          Williams Racing                        1:15.327  59 1.542  0.076  205.934 16:26:45
+12 10 Pierre GASLY            Scuderia AlphaTauri                    1:15.327  64 1.542  0.000  205.934 16:32:57
+13 22 Yuki TSUNODA            Scuderia AlphaTauri                    1:15.508  63 1.723  0.181  205.440 16:33:00
+14 77 Valtteri BOTTAS         Alfa Romeo F1 Team ORLEN               1:15.511  62 1.726  0.003  205.432 16:30:21
+15 5 Sebastian VETTEL         Aston Martin Aramco Cognizant F1 Team  1:15.549  64 1.764  0.038  205.328 16:32:54
+16 23 Alexander ALBON         Williams Racing                        1:15.613  49 1.828  0.064  205.155 16:10:47
+17 24 ZHOU Guanyu             Alfa Romeo F1 Team ORLEN               1:15.802  64 2.017  0.189  204.643 16:32:56
+18 4 Lando NORRIS             McLaren F1 Team                        1:15.855  48 2.070  0.053  204.500 16:09:10
+
+© 2022 Formula One World Championship Limited
+The F1 FORMULA 1 logo, F1 logo, FORMULA 1, FORMULA ONE, F1, FIA FORMULA ONE WORLD CHAMPIONSHIP, GRAND PRIX and related marks are trade marks of Formula One Licensing BV, a
+Formula 1 company. The FIA logo is a trade mark of the Fédération Internationale de l'Automobile. All rights reserved.
+No part of these results/data may be reproduced, stored in a retrieval system or transmitted in any form or by any means electronic, mechanical, photocopying, recording, broadcasting or otherwise without
+prior permission of the copyright holder except for reproduction in local/national/international daily press and regular printed publications on sale to the public within 90 days of the event to which the
+results/data relate and provided that the copyright symbol and name of copyright owner appears.
+

@@ -1,0 +1,102 @@
+@import 'tailwindcss';
+
+@theme {
+  --font-sans: 'Inter', ui-sans-serif, system-ui, sans-serif;
+  --font-mono: 'JetBrains Mono', ui-monospace, monospace;
+  --font-display: 'Saira Condensed', 'Inter', sans-serif;
+  --color-f1: #e10600;
+  --color-f1-dark: #a00400;
+  --color-ink-950: #08090b;
+  --color-ink-900: #0e1014;
+  --color-ink-850: #13161b;
+  --color-ink-800: #181c22;
+  --color-ink-700: #232830;
+  --color-ink-600: #2f353f;
+  --color-ink-500: #47505c;
+  --color-ink-400: #6b7582;
+  --color-ink-300: #98a1ad;
+  --color-ink-200: #c4cad2;
+  --color-ink-100: #e6e9ed;
+  --color-s1: #e10600;
+  --color-s2: #bf8a10;
+  --color-s3: #2b8fd6;
+}
+
+:root {
+  color-scheme: dark;
+}
+
+html,
+body,
+#root {
+  height: 100%;
+  margin: 0;
+  overflow: hidden;
+  background: #08090b;
+  color: #e6e9ed;
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+}
+
+.panel {
+  background: color-mix(in srgb, #0e1014 86%, transparent);
+  backdrop-filter: blur(14px) saturate(1.2);
+  -webkit-backdrop-filter: blur(14px) saturate(1.2);
+  border: 1px solid rgb(255 255 255 / 0.07);
+  box-shadow: 0 10px 40px rgb(0 0 0 / 0.35);
+}
+
+.panel-light {
+  background: color-mix(in srgb, #0e1014 72%, transparent);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border: 1px solid rgb(255 255 255 / 0.08);
+}
+
+.scroll-thin {
+  scrollbar-width: thin;
+  scrollbar-color: #2f353f transparent;
+}
+.scroll-thin::-webkit-scrollbar {
+  width: 6px;
+}
+.scroll-thin::-webkit-scrollbar-thumb {
+  background: #2f353f;
+  border-radius: 3px;
+}
+
+.label-chip {
+  font-family: var(--font-display);
+  letter-spacing: 0.02em;
+  pointer-events: none;
+  user-select: none;
+  white-space: nowrap;
+  transition: opacity 0.25s ease;
+}
+
+.kbd {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  padding: 1px 5px;
+  border-radius: 4px;
+  border: 1px solid rgb(255 255 255 / 0.14);
+  background: rgb(255 255 255 / 0.05);
+  color: #c4cad2;
+}
+
+.tick {
+  background-image: repeating-linear-gradient(90deg, rgb(255 255 255 / 0.18) 0 1px, transparent 1px 10px);
+}
+
+@keyframes pulse-red {
+  0%,
+  100% {
+    box-shadow: 0 0 0 0 rgb(225 6 0 / 0.5);
+  }
+  50% {
+    box-shadow: 0 0 0 6px rgb(225 6 0 / 0);
+  }
+}
+.pulse-red {
+  animation: pulse-red 2s infinite;
+}
