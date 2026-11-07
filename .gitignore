@@ -8,3 +8,4 @@ research/f1cache/
 # dados brutos grandes (regeneráveis com npm run data:osm)
 research/raw/osm_area.json
 *.tsbuildinfo
+.claude/
