@@ -5,6 +5,7 @@ import { getWorld, pointInPoly, polyBounds, rng, type XZ } from '../world/world'
 import { useAppStore, type Quality, type VisualMode } from '../../store/useAppStore';
 import { occupied } from './occupancy';
 import { patchSceneMaterial } from '../materials/patch';
+import { styleOf } from '../modes/modeStyles';
 import { insideArea } from '../terrain/plinth';
 import { onHoverEvent, onSelectEvent } from '../selection/events';
 import type { Selection } from '../../data/types';
@@ -55,48 +56,106 @@ function lumpy(geo: THREE.BufferGeometry, seed: number, amt: number) {
   return geo;
 }
 
-/** Geometrias procedurais por espécie (altura ~1 = escala base). */
+/** Pinta vértices com gradiente vertical (base mais escura = oclusão da copa). */
+function shadeLeaves(g: THREE.BufferGeometry, color: string, y0: number, y1: number, dark: number) {
+  const col = new THREE.Color(color);
+  const pos = g.getAttribute('position');
+  const arr = new Float32Array(pos.count * 3);
+  for (let i = 0; i < pos.count; i++) {
+    const t = Math.min(1, Math.max(0, (pos.getY(i) - y0) / (y1 - y0 || 1)));
+    const k = 1 - dark * (1 - t);
+    arr[i * 3] = col.r * k;
+    arr[i * 3 + 1] = col.g * k;
+    arr[i * 3 + 2] = col.b * k;
+  }
+  g.setAttribute('color', new THREE.BufferAttribute(arr, 3));
+  return g;
+}
+
+/**
+ * Geometrias procedurais por espécie (altura base ~6–14 m).
+ * cartoon   → volumes facetados (copa guarda-chuva, palmeira de folhas largas), como a referência do GAME MODE.
+ * realistic → copas densas de vários lóbulos com sombreamento interno (SIMULATION MODE).
+ */
 function speciesGeometry(sp: Species, mode: VisualMode, detail: number): THREE.BufferGeometry {
-  const game = mode === 'sim';
-  const trunkC = game ? '#5b4636' : '#3d3a30';
-  const leaf = (c: string) => (game ? c : '#2f5129');
+  const st = styleOf(mode).trees;
+  const cartoon = st.style === 'cartoon';
+  const L = st.leaf;
   const parts: THREE.BufferGeometry[] = [];
-  const trunk = (h: number, r: number) => colorize(new THREE.CylinderGeometry(r * 0.7, r, h, 6, 1).translate(0, h / 2, 0), trunkC);
-  const blob = (r: number, x: number, y: number, z: number, c: string, sx = 1, sy = 1, seed = 1) =>
-    colorize(lumpy(new THREE.IcosahedronGeometry(r, detail), seed, game ? 0.35 : 0.05).scale(sx, sy, sx).translate(x, y, z), leaf(c));
+  const r = rng(sp.length * 97 + (cartoon ? 1 : 2));
+  const trunk = (h: number, rad: number, bend = 0) => {
+    const g = new THREE.CylinderGeometry(rad * 0.65, rad, h, cartoon ? 5 : 7, 1).translate(0, h / 2, 0);
+    if (bend) g.rotateZ(bend);
+    return colorize(g, st.trunk);
+  };
+  // lóbulo de copa
+  const lobe = (rad: number, x: number, y: number, z: number, c: string, sx = 1, sy = 1, seed = 1) => {
+    const g = cartoon ? new THREE.IcosahedronGeometry(rad, 0) : new THREE.IcosahedronGeometry(rad, detail);
+    lumpy(g, seed, cartoon ? 0.22 : 0.3);
+    g.scale(sx, sy, sx).translate(x, y, z);
+    return shadeLeaves(g, c, y - rad * sy, y + rad * sy, cartoon ? 0.18 : 0.45);
+  };
+  /** copa realista: aglomerado de lóbulos menores ao redor de um centro */
+  const cluster = (cx: number, cy: number, cz: number, R: number, Ry: number, n: number, seed: number) => {
+    for (let i = 0; i < n; i++) {
+      const a = r() * Math.PI * 2;
+      const d = Math.sqrt(r()) * R * 0.75;
+      const yy = cy + (r() - 0.35) * Ry;
+      const rad = R * (0.38 + r() * 0.25);
+      parts.push(lobe(rad, cx + Math.cos(a) * d, yy, cz + Math.sin(a) * d, L[Math.floor(r() * L.length)], 1, 0.85, seed + i));
+    }
+  };
   switch (sp) {
     case 'folhosa':
-      parts.push(trunk(3.2, 0.28), blob(2.6, 0, 5.2, 0, '#4f7a32', 1, 0.85, 3), blob(1.9, 1.3, 4.6, 0.6, '#5a8638', 1, 0.9, 5), blob(1.8, -1.1, 4.8, -0.8, '#466e2c', 1, 0.9, 7));
+      parts.push(trunk(3.4, 0.3));
+      if (cartoon) parts.push(lobe(2.8, 0, 5.3, 0, L[0], 1.1, 0.8, 3), lobe(1.9, 1.4, 4.8, 0.7, L[1], 1, 0.85, 5), lobe(1.8, -1.2, 5.0, -0.9, L[2], 1, 0.85, 7));
+      else cluster(0, 5.2, 0, 3.0, 1.8, 9, 3);
       break;
     case 'copa-larga':
-      parts.push(trunk(3.6, 0.35), blob(3.6, 0, 6.0, 0, '#5d7f35', 1.25, 0.55, 11), blob(2.4, 2.4, 5.6, 1.0, '#678a3c', 1, 0.6, 13), blob(2.2, -2.2, 5.8, -1.2, '#557732', 1, 0.6, 17));
+      parts.push(trunk(4.2, 0.36));
+      // copa em guarda-chuva (aspecto das árvores da referência e das sibipirunas paulistanas)
+      if (cartoon) parts.push(lobe(3.9, 0, 6.2, 0, L[1], 1.35, 0.42, 11), lobe(2.6, 2.3, 5.9, 1.1, L[0], 1.1, 0.45, 13), lobe(2.4, -2.2, 6.0, -1.2, L[3], 1.1, 0.45, 17), lobe(2.0, 0.5, 7.0, -1.8, L[4], 1, 0.5, 19));
+      else cluster(0, 6.0, 0, 4.2, 1.2, 12, 11);
       break;
     case 'eucalipto':
-      parts.push(trunk(9, 0.3), blob(2.2, 0, 10.5, 0, '#6b8a55', 0.9, 1.5, 19), blob(1.6, 0.6, 13.2, 0.3, '#728f5b', 0.9, 1.3, 23));
+      parts.push(trunk(10, 0.32));
+      if (cartoon) parts.push(lobe(2.3, 0, 10.8, 0, L[2], 0.9, 1.5, 19), lobe(1.7, 0.6, 13.4, 0.3, L[0], 0.9, 1.3, 23));
+      else cluster(0, 11.5, 0, 2.6, 3.4, 9, 19);
       break;
     case 'conifera':
-      parts.push(trunk(2.5, 0.25));
-      for (let i = 0; i < 4; i++) parts.push(colorize(new THREE.ConeGeometry(2.6 - i * 0.55, 3.2, 7, 1).translate(0, 3.2 + i * 1.9, 0), leaf(game ? '#2f5228' : '#bcd2a3')));
+      parts.push(trunk(2.6, 0.26));
+      for (let i = 0; i < 4; i++) {
+        const g = new THREE.ConeGeometry(2.7 - i * 0.58, 3.3, cartoon ? 6 : 10, 1).translate(0, 3.3 + i * 1.9, 0);
+        parts.push(shadeLeaves(g, cartoon ? '#3c7a32' : '#3b4a2c', 1.6 + i * 1.9, 5 + i * 1.9, cartoon ? 0.15 : 0.4));
+      }
       break;
     case 'palmeira': {
-      parts.push(colorize(new THREE.CylinderGeometry(0.2, 0.28, 8, 6).translate(0, 4, 0), game ? '#7a6a55' : '#efeee9'));
-      for (let i = 0; i < 7; i++) {
-        const f = new THREE.BoxGeometry(3.6, 0.06, 0.7).translate(1.8, 0, 0);
-        f.rotateZ(-0.45);
-        f.rotateY((i / 7) * Math.PI * 2);
-        f.translate(0, 8, 0);
-        parts.push(colorize(f, leaf('#4c7a34')));
+      parts.push(trunk(8.5, 0.26, 0.06));
+      const nf = cartoon ? 8 : 11;
+      for (let i = 0; i < nf; i++) {
+        // folha: lâmina larga afinando na ponta, inclinada para baixo
+        const leaf = new THREE.BufferGeometry();
+        const len = cartoon ? 4.2 : 4.6;
+        const w = cartoon ? 0.9 : 0.6;
+        leaf.setAttribute('position', new THREE.Float32BufferAttribute([0, 0, -0.15, len * 0.45, 0.25, -w, len * 0.45, 0.25, w, len, -0.9, 0, 0, 0, 0.15], 3));
+        leaf.setIndex([0, 2, 1, 1, 2, 3, 0, 1, 2, 1, 3, 2]);
+        leaf.computeVertexNormals();
+        leaf.rotateZ(-0.25 - r() * 0.25);
+        leaf.rotateY((i / nf) * Math.PI * 2 + r() * 0.3);
+        leaf.translate(0.45, 8.5, 0);
+        parts.push(shadeLeaves(leaf, cartoon ? L[0] : '#4f6232', 7.5, 8.8, 0.25));
       }
       break;
     }
     case 'arbusto':
-      parts.push(blob(1.1, 0, 0.8, 0, '#4e6e30', 1.2, 0.7, 29), blob(0.8, 0.8, 0.6, 0.3, '#5a7a36', 1, 0.8, 31));
+      if (cartoon) parts.push(lobe(1.2, 0, 0.8, 0, L[3], 1.25, 0.7, 29), lobe(0.85, 0.85, 0.6, 0.3, L[1], 1, 0.8, 31), lobe(0.75, -0.7, 0.55, -0.4, L[4], 1, 0.8, 33));
+      else cluster(0, 0.8, 0, 1.4, 0.6, 6, 29);
       break;
   }
-  // padroniza atributos (BoxGeometry/Cylinder têm uv; Icosahedron também)
   const clean = parts.map((p) => {
     const g = p.index ? p.toNonIndexed() : p;
     for (const k of Object.keys(g.attributes)) if (!['position', 'normal', 'color'].includes(k)) g.deleteAttribute(k);
+    if (!g.getAttribute('normal')) g.computeVertexNormals();
     return g;
   });
   return mergeGeometries(clean);
@@ -177,7 +236,7 @@ export function computeTrees(quality: Quality, mode: VisualMode): TreeInstance[]
 const matCache = new Map<string, THREE.Material>();
 function treeMaterial(mode: VisualMode) {
   if (!matCache.has(mode))
-    matCache.set(mode, patchSceneMaterial(new THREE.MeshStandardMaterial({ vertexColors: true, roughness: mode === 'sim' ? 0.9 : 1, flatShading: mode === 'game' }), 'tree'));
+    matCache.set(mode, patchSceneMaterial(new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.9, flatShading: styleOf(mode).flat, side: THREE.DoubleSide }), 'tree'));
   return matCache.get(mode)!;
 }
 
@@ -209,8 +268,9 @@ export function Trees() {
         const sxz = t.s * (0.9 + r() * 0.2);
         m.compose(new THREE.Vector3(t.x, y, t.z), q, new THREE.Vector3(sxz, t.s, sxz));
         mesh.setMatrixAt(i, m);
-        const v = mode === 'sim' ? 0.78 + r() * 0.4 : 0.85 + r() * 0.3;
-        const warm = mode === 'sim' ? (r() - 0.5) * 0.12 : 0;
+        const tint = styleOf(mode).trees.tint;
+        const v = 1 - tint / 2 + r() * tint;
+        const warm = (r() - 0.5) * tint * 0.6;
         c.setRGB(v + warm, v, v - warm);
         mesh.setColorAt(i, c);
       });

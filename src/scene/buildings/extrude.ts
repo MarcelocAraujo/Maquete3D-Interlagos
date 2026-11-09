@@ -106,3 +106,39 @@ export function singleBuildingGeometry(poly: XZ[], y0: number, y1: number) {
   g.clearGroups();
   return g;
 }
+
+/**
+ * Telhado de duas águas sobre o retângulo mínimo da pegada (casas com telha
+ * cerâmica). Os triângulos entram no grupo de cobertura.
+ */
+export function addGableRoof(out: ExtrudeOut, rect: { center: [number, number]; angle: number; length: number; width: number }, y: number, h: number, color: THREE.Color) {
+  const { center, angle, length, width } = rect;
+  const ux = Math.cos(angle), uz = Math.sin(angle);
+  const vx = -uz, vz = ux;
+  const hl = length / 2 + 0.3, hw = width / 2 + 0.3;
+  const P = (a: number, b: number, yy: number): [number, number, number] => [center[0] + ux * a + vx * b, yy, center[1] + uz * a + vz * b];
+  const c0 = P(-hl, -hw, y), c1 = P(hl, -hw, y), c2 = P(hl, hw, y), c3 = P(-hl, hw, y);
+  const r0 = P(-hl, 0, y + h), r1 = P(hl, 0, y + h);
+  const tris: [number, number, number][][] = [
+    [c0, c1, r1], [c0, r1, r0], // água 1
+    [c2, c3, r0], [c2, r0, r1], // água 2
+    [c1, c2, r1], [c3, c0, r0], // oitões
+  ];
+  for (const t of tris) {
+    const a = new THREE.Vector3(...t[0]), b = new THREE.Vector3(...t[1]), c = new THREE.Vector3(...t[2]);
+    const n = new THREE.Vector3().subVectors(b, a).cross(new THREE.Vector3().subVectors(c, a)).normalize();
+    // garante normal para fora/para cima
+    const mid = a.clone().add(b).add(c).divideScalar(3);
+    const out2 = new THREE.Vector3(mid.x - center[0], mid.y - y + 0.01, mid.z - center[1]);
+    const order = n.dot(out2) < 0 ? [t[0], t[2], t[1]] : t;
+    const nn = n.dot(out2) < 0 ? n.negate() : n;
+    const base = out.pos.length / 3;
+    for (const p of order) {
+      out.pos.push(p[0], p[1], p[2]);
+      out.nor.push(nn.x, nn.y, nn.z);
+      out.uv.push(p[0] / 12, p[2] / 12);
+      out.col.push(color.r, color.g, color.b);
+    }
+    out.roofIdx.push(base, base + 1, base + 2);
+  }
+}

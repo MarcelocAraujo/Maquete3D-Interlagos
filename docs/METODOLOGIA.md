@@ -49,8 +49,9 @@ Distâncias das FIA Event Notes 2022 aplicadas a partir do início da via OSM nu
 
 ## 3. Renderização
 
-- **SIMULATION MODE** (realista): materiais PBR com texturas procedurais (asfalto com agregados, normal e rugosidade; marcas de borracha), céu físico, sombras dinâmicas, névoa atmosférica, N8AO, bloom, ACES, vinheta.
-- **GAME MODE** (mapa tático, referência visual: F1 Manager): cores chapadas escuras, prédios cinza low-poly, árvores facetadas, névoa escura nas bordas do recorte, AO e tone mapping neutro.
+- Todas as escolhas visuais por modo ficam centralizadas em `src/scene/modes/modeStyles.ts` (paleta do solo, pista, estruturas, prédios, árvores, assentos, luz, céu, sombras e pós-processamento). A geometria e os dados são compartilhados.
+- **GAME MODE** (referência estética: *Cartoon Race Track Interlagos*, RCC Design / Sketchfab — usada só para o estilo, nunca para a geometria): facetas planas, céu em gradiente ciano, grama verde viva, asfalto escuro com bordas brancas nítidas, zebras verde/amarelo, muros de concreto com padrão hexagonal, casas brancas com telhado laranja de duas águas, árvores guarda-chuva e palmeiras facetadas, arquibancadas com fileiras verde/amarelo, AO suave e tone mapping neutro.
+- **SIMULATION MODE** (apresentação arquitetônica realista): materiais PBR com texturas procedurais (asfalto com agregados, normal e rugosidade; marcas de borracha), solo em verde-oliva com manchas de palha e terra tiradas de fotos aéreas, céu físico, sombras dinâmicas, árvores de copa densa com sombreamento interno, telhados cerâmicos, AO, bloom leve e ACES.
 - A troca de modo captura o quadro atual e faz crossfade sobre o novo modo, preservando câmera e seleção.
 
 ## 4. Desempenho

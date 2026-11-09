@@ -10,6 +10,7 @@ import { sectorOf } from '../../data/circuit/corners';
 import type { Selection } from '../../data/types';
 import { useAppStore, type VisualMode } from '../../store/useAppStore';
 import { asphaltTextures } from '../materials/textures';
+import { styleOf } from '../modes/modeStyles';
 import { patchTrackMaterial } from '../materials/patch';
 import { getWorld } from '../world/world';
 import { buildStrip, brakingFactor, computeKerbs, computeRunoffs, envelope, hash, racingLine } from './geometry';
@@ -76,47 +77,54 @@ function checkerTexture() {
 
 function asphaltMaterial(mode: VisualMode) {
   return trackMat('asphalt', mode, () => {
-    if (mode === 'sim') {
-      const t = asphaltTextures();
-      const m = new THREE.MeshStandardMaterial({ map: t.map, normalMap: t.normalMap, roughnessMap: t.roughnessMap, normalScale: new THREE.Vector2(0.6, 0.6), color: '#ffffff', roughness: 1, metalness: 0 });
-      patchTrackMaterial(m, { rim: true, key: 'asphalt-game' });
-      const prev = m.onBeforeCompile;
-      m.onBeforeCompile = (shader, r) => {
-        prev.call(m, shader, r);
-        // marcas de borracha (trajetória ideal e frenagens) via atributo aExtra
-        shader.vertexShader = shader.vertexShader.replace('#include <common>', '#include <common>\nattribute float aExtra;\nvarying float vRub;').replace('#include <begin_vertex>', '#include <begin_vertex>\nvRub = aExtra;');
-        shader.fragmentShader = shader.fragmentShader
-          .replace('#include <common>', '#include <common>\nvarying float vRub;')
-          .replace('#include <color_fragment>', '#include <color_fragment>\ndiffuseColor.rgb *= 1.0 - clamp(vRub, 0.0, 1.0) * 0.42;')
-          .replace('#include <roughnessmap_fragment>', '#include <roughnessmap_fragment>\nroughnessFactor *= 1.0 - clamp(vRub, 0.0, 1.0) * 0.25;');
-      };
-      return m;
-    }
-    const m = new THREE.MeshStandardMaterial({ color: '#7a7e84', roughness: 0.85, metalness: 0 });
-    return patchTrackMaterial(m, { rim: true, key: 'asphalt-sim' });
+    const st = styleOf(mode).track;
+    const t = asphaltTextures();
+    const m = st.asphaltTexture
+      ? new THREE.MeshStandardMaterial({ map: t.map, normalMap: t.normalMap, roughnessMap: t.roughnessMap, normalScale: new THREE.Vector2(0.6, 0.6), color: st.asphalt, roughness: 1, metalness: 0 })
+      : new THREE.MeshStandardMaterial({ color: st.asphalt, roughness: 0.82, metalness: 0 });
+    patchTrackMaterial(m, { rim: true, key: 'asphalt-game' });
+    const prev = m.onBeforeCompile;
+    const rub = st.rubber.toFixed(2);
+    m.onBeforeCompile = (shader, r) => {
+      prev.call(m, shader, r);
+      // marcas de borracha (trajetória ideal e frenagens) via atributo aExtra
+      shader.vertexShader = shader.vertexShader
+        .replace('#include <common>', '#include <common>\nattribute float aExtra;\nvarying float vRub;')
+        .replace('#include <begin_vertex>', '#include <begin_vertex>\nvRub = aExtra;');
+      shader.fragmentShader = shader.fragmentShader
+        .replace('#include <common>', '#include <common>\nvarying float vRub;')
+        .replace('#include <color_fragment>', `#include <color_fragment>
+diffuseColor.rgb *= 1.0 - clamp(vRub, 0.0, 1.0) * 0.42 * ${rub};`)
+        .replace('#include <roughnessmap_fragment>', `#include <roughnessmap_fragment>
+roughnessFactor *= 1.0 - clamp(vRub, 0.0, 1.0) * 0.25 * ${rub};`);
+    };
+    m.customProgramCacheKey = () => `track-asphalt-${mode}`;
+    return m;
   });
 }
 
 /** Zebras nas cores aplicadas em Interlagos desde 2024 (verde/amarelo, homenagem a Senna). */
 function kerbMaterial(mode: VisualMode) {
   return trackMat('kerb', mode, () => {
-    const tex = stripeTexture(mode === 'sim' ? ['#1d8a3a', '#f2c200'] : ['#2f8f4c', '#d8b42e']);
-    const m = new THREE.MeshStandardMaterial({ map: tex, roughness: mode === 'sim' ? 0.55 : 0.9, metalness: 0, polygonOffset: true, polygonOffsetFactor: -2, polygonOffsetUnits: -2 });
+    const st = styleOf(mode).track;
+    const tex = stripeTexture([...st.kerb]);
+    const m = new THREE.MeshStandardMaterial({ map: tex, roughness: st.kerbRoughness, metalness: 0, polygonOffset: true, polygonOffsetFactor: -2, polygonOffsetUnits: -2 });
     return patchTrackMaterial(m, { rim: false, key: `kerb-${mode}` });
   });
 }
 
 function lineMaterial(mode: VisualMode) {
   return trackMat('line', mode, () => {
-    const m = new THREE.MeshStandardMaterial({ color: mode === 'sim' ? '#e9e9e4' : '#ffffff', roughness: 0.6, metalness: 0, polygonOffset: true, polygonOffsetFactor: -4, polygonOffsetUnits: -4 });
+    const st = styleOf(mode).track;
+    const m = new THREE.MeshStandardMaterial({ color: st.line, roughness: 0.6, metalness: 0, polygonOffset: true, polygonOffsetFactor: -4, polygonOffsetUnits: -4 });
     patchTrackMaterial(m, { rim: false, key: `line-${mode}` });
     const prev = m.onBeforeCompile;
-    const far = mode === 'sim' ? 'vec3(0.13, 0.135, 0.14)' : 'vec3(0.19, 0.20, 0.22)';
+    const far = `vec3(${st.lineFar.join(', ')})`;
     m.onBeforeCompile = (shader, r) => {
       prev.call(m, shader, r);
       // linhas finas se fundem ao asfalto com a distância (evita cintilação)
       shader.fragmentShader = shader.fragmentShader.replace('#include <emissivemap_fragment>', `#include <emissivemap_fragment>
-diffuseColor.rgb = mix(diffuseColor.rgb, ${far}, smoothstep(220.0, 650.0, length(vViewPosition)));`);
+diffuseColor.rgb = mix(diffuseColor.rgb, ${far}, smoothstep(260.0, 750.0, length(vViewPosition)));`);
     };
     m.customProgramCacheKey = () => `track-line-${mode}`;
     return m;
@@ -125,18 +133,18 @@ diffuseColor.rgb = mix(diffuseColor.rgb, ${far}, smoothstep(220.0, 650.0, length
 
 function runoffMaterial(mode: VisualMode, kind: 'paint' | 'concrete') {
   return trackMat(`runoff-${kind}`, mode, () => {
+    const st = styleOf(mode).track;
     const t = asphaltTextures();
-    const color = kind === 'paint' ? (mode === 'sim' ? '#36b7b0' : '#2fa394') : mode === 'sim' ? '#b4b2ab' : '#6f7275';
     const m = new THREE.MeshStandardMaterial({
-      color,
-      map: mode === 'sim' ? t.map : null,
+      color: kind === 'paint' ? st.runoffPaint : st.runoffConcrete,
+      map: st.runoffTextured ? t.map : null,
       roughness: 0.85,
       metalness: 0,
       polygonOffset: true,
       polygonOffsetFactor: -1,
       polygonOffsetUnits: -1,
     });
-    if (mode === 'sim') m.color.multiplyScalar(kind === 'paint' ? 2.75 : 2.4);
+    if (st.runoffTextured) m.color.multiplyScalar(kind === 'paint' ? 2.75 : 2.4);
     return patchTrackMaterial(m, { rim: false, sector: false, key: `runoff-${kind}-${mode}` });
   });
 }
@@ -196,7 +204,7 @@ function useTrackGeometries() {
           const outer = k.side === 1 ? 1 - u : u;
           const e = envelope(s, k.s0, k.s1, 3);
           // perfil: faixa pintada quase plana junto à pista + ressalto externo ("zebra elevada")
-          return 0.012 + e * (0.02 + 0.055 * Math.min(1, Math.max(0, (outer - 0.45) / 0.4)));
+          return 0.012 + e * (0.025 + 0.075 * Math.min(1, Math.max(0, (outer - 0.45) / 0.4)));
         },
       });
     });

@@ -1,9 +1,10 @@
 import { useMemo } from 'react';
 import * as THREE from 'three';
 import type { ThreeEvent } from '@react-three/fiber';
-import { getWorld, pointInPoly, polyCentroid, rng, type BuildingFeature } from '../world/world';
+import { getWorld, minAreaRect, pointInPoly, polyArea, polyCentroid, rng, type BuildingFeature } from '../world/world';
 import { useAppStore, type VisualMode } from '../../store/useAppStore';
-import { extrudeFootprint, newExtrudeOut, singleBuildingGeometry, toGeometry } from './extrude';
+import { addGableRoof, extrudeFootprint, newExtrudeOut, singleBuildingGeometry, toGeometry } from './extrude';
+import { styleOf } from '../modes/modeStyles';
 import { facadeTextures, concreteTexture } from '../materials/textures';
 import { patchSceneMaterial, sceneUniforms } from '../materials/patch';
 import { insideArea } from '../terrain/plinth';
@@ -31,28 +32,27 @@ function buildBatch(items: BuildingFeature[], mode: VisualMode, complex: boolean
   const r = rng(complex ? 99 : 42);
   const wallTriStarts: number[] = [];
   const roofTriStarts: number[] = [];
-  const wallsGame = ['#d9d2c3', '#e6e0d3', '#cfc6b4', '#bdb39f', '#e9e4da', '#c9b9a0', '#d6cab6', '#a9a196'];
-  const roofsGame = ['#a9583a', '#b8653f', '#9c4f34', '#8d8b86', '#7d7c78', '#a7a49c', '#c2703f'];
+  const st = styleOf(mode).buildings;
   const wc = new THREE.Color();
   const rc = new THREE.Color();
   for (const b of items) {
     wallTriStarts.push(out.wallIdx.length / 3);
     roofTriStarts.push(out.roofIdx.length / 3);
-    if (mode === 'sim') {
-      wc.set(complex ? '#e4e2dc' : wallsGame[Math.floor(r() * wallsGame.length)]);
-      const tile = !complex && b.h < 9 && r() < 0.68;
-      rc.set(tile ? roofsGame[Math.floor(r() * 3)] : complex ? '#c9c7c0' : roofsGame[3 + Math.floor(r() * 4)]);
-    } else {
-      // volumes cinza low-poly (complexo mais claro que o entorno)
-      const v = complex ? 0.42 : 0.2 + r() * 0.05;
-      wc.setRGB(v, v * 1.01, v * 1.03);
-      rc.setRGB(v * 1.15, v * 1.16, v * 1.18);
-    }
+    const pick = (arr: string[]) => arr[Math.floor(r() * arr.length)];
+    wc.set(complex ? st.complexWall : pick(st.walls));
+    const area = Math.abs(polyArea(b.poly));
+    const tile = !complex && b.h < 9 && area < 450 && r() < st.tileShare;
+    rc.set(tile ? pick(st.roofsTile) : complex ? st.complexRoof : pick(st.roofsFlat));
     if (b.k === 'tank') {
-      wc.set(mode === 'sim' ? '#b9bcbf' : '#6c7277');
+      wc.set(mode === 'sim' ? '#b9bcbf' : '#4f8fc4');
       rc.copy(wc);
     }
-    extrudeFootprint(out, b.poly, b.b - 1.2, buildingTop(b), wc, rc, mode === 'sim' ? [26, 24] : [1000, 1000]);
+    const top = buildingTop(b);
+    extrudeFootprint(out, b.poly, b.b - 1.2, top, wc, rc, st.facade ? [26, 24] : [1000, 1000]);
+    if (tile) {
+      const rect = minAreaRect(b.poly);
+      addGableRoof(out, rect, top, Math.min(2.6, 0.32 * rect.width + 0.4), rc);
+    }
   }
   return { geo: toGeometry(out), wallTriStarts, roofTriStarts, wallTris: out.wallIdx.length / 3, items };
 }
@@ -79,7 +79,7 @@ function buildingMaterials(mode: VisualMode, complex: boolean): THREE.Material[]
   const key = `${mode}-${complex}`;
   if (matCache.has(key)) return matCache.get(key)!;
   let mats: THREE.Material[];
-  if (mode === 'sim') {
+  if (styleOf(mode).buildings.facade) {
     const f = facadeTextures();
     const wall = new THREE.MeshStandardMaterial({ vertexColors: true, map: complex ? concreteTexture() : f.map, emissiveMap: complex ? null : f.emissiveMap, emissive: new THREE.Color('#ffd9a0'), emissiveIntensity: 0, roughness: 0.85, metalness: 0 });
     const roof = new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.8, metalness: 0.05 });
@@ -95,9 +95,9 @@ function buildingMaterials(mode: VisualMode, complex: boolean): THREE.Material[]
     wall.emissiveIntensity = 1;
     mats = [patchSceneMaterial(wall, `bwall-${complex}`), patchSceneMaterial(roof, `broof-${complex}`)];
   } else {
-    const wall = new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.95, metalness: 0 });
-    const roof = new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.95, metalness: 0 });
-    mats = [patchSceneMaterial(wall, 'bwall-sim'), patchSceneMaterial(roof, 'broof-sim')];
+    const wall = new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.85, metalness: 0, flatShading: true });
+    const roof = new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.8, metalness: 0, flatShading: true });
+    mats = [patchSceneMaterial(wall, 'bwall-game'), patchSceneMaterial(roof, 'broof-game')];
   }
   matCache.set(key, mats);
   return mats;

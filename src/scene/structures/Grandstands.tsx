@@ -7,6 +7,7 @@ import { getWorld, minAreaRect, type XZ } from '../world/world';
 import { useAppStore, type VisualMode } from '../../store/useAppStore';
 import { structMat } from '../materials/structureMaterials';
 import { patchSceneMaterial } from '../materials/patch';
+import { styleOf } from '../modes/modeStyles';
 import { registerSelectable } from '../selection/bounds';
 import { onHoverEvent, onSelectEvent } from '../selection/events';
 import type { Selection } from '../../data/types';
@@ -274,13 +275,22 @@ function Stand({ g, mode, quality }: { g: GrandstandInfo; mode: VisualMode; qual
     const step = quality === 'medium' ? 2 : 1;
     const count = Math.ceil(geo.seats.length / step);
     const mesh = new THREE.InstancedMesh(seatGeometry(), seatMaterial(mode), count);
-    const base = new THREE.Color(mode === 'sim' ? g.seatColor : '#8e959b');
+    const brasil = styleOf(mode).seats === 'brasil';
+    const base = new THREE.Color(g.seatColor);
+    const green = new THREE.Color('#1f9a4a');
+    const yellow = new THREE.Color('#f6c81e');
     const c = new THREE.Color();
     let k = 0;
     for (let i = 0; i < geo.seats.length; i += step) {
       mesh.setMatrixAt(k, geo.seats[i]);
-      const v = mode === 'sim' ? 0.88 + ((i * 2654435761) % 1000) / 1000 * 0.2 : 1;
-      c.copy(base).multiplyScalar(v);
+      if (brasil) {
+        // GAME MODE: fileiras alternando verde e amarelo (linguagem da referência)
+        const row = Math.floor(geo.seats[i].elements[13] / 0.42 + 0.5);
+        c.copy(Math.floor(row / 2) % 2 ? yellow : green);
+      } else {
+        const v = 0.88 + (((i * 2654435761) % 1000) / 1000) * 0.2;
+        c.copy(base).multiplyScalar(v);
+      }
       mesh.setColorAt(k, c);
       k++;
     }

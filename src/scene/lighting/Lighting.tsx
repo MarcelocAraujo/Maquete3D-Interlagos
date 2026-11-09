@@ -5,6 +5,7 @@ import { RoomEnvironment } from 'three/examples/jsm/environments/RoomEnvironment
 import * as THREE from 'three';
 import { useAppStore, type Lighting as LightingMode, type VisualMode } from '../../store/useAppStore';
 import { sceneUniforms } from '../materials/patch';
+import { styleOf, type LightSetup } from '../modes/modeStyles';
 
 const DEG = Math.PI / 180;
 
@@ -29,17 +30,31 @@ interface LightPreset {
   exposure: number;
 }
 
-// São Paulo (hemisfério sul): o sol do meio do dia fica ao norte.
-export function lightPreset(mode: VisualMode, time: LightingMode): LightPreset {
-  if (mode === 'sim') {
-    if (time === 'day') return { sun: sunDir(25, 58), sunColor: '#fff4e2', sunIntensity: 3.1, hemiSky: '#cfe3ff', hemiGround: '#5a5a40', hemiIntensity: 0.55, background: '#9ec2e6', fog: '#c2d1de', fogDensity: 0.00013, envIntensity: 0.55, exposure: 1.0 };
-    if (time === 'sunset') return { sun: sunDir(290, 6), sunColor: '#ffb074', sunIntensity: 2.6, hemiSky: '#f6c9a4', hemiGround: '#3b3226', hemiIntensity: 0.45, background: '#f0a36d', fog: '#d9a07c', fogDensity: 0.0002, envIntensity: 0.45, exposure: 1.05 };
-    return { sun: sunDir(130, 38), sunColor: '#a9bfee', sunIntensity: 0.5, hemiSky: '#2a3a5c', hemiGround: '#101218', hemiIntensity: 0.55, background: '#060a14', fog: '#0c1220', fogDensity: 0.00032, envIntensity: 0.12, exposure: 1.35 };
-  }
-  // GAME MODE: estética de "mapa tático" (fundo escuro, bordas do recorte somem na névoa)
-  if (time === 'day') return { sun: sunDir(35, 55), sunColor: '#ffffff', sunIntensity: 2.0, hemiSky: '#c3d2cc', hemiGround: '#1c221b', hemiIntensity: 1.25, background: '#161a18', fog: '#161a18', fogDensity: 0.00042, envIntensity: 0.25, exposure: 1.05 };
-  if (time === 'sunset') return { sun: sunDir(290, 12), sunColor: '#ffc89a', sunIntensity: 1.9, hemiSky: '#c9ab96', hemiGround: '#1b1a18', hemiIntensity: 1.0, background: '#1e1918', fog: '#1e1918', fogDensity: 0.00042, envIntensity: 0.2, exposure: 1.05 };
-  return { sun: sunDir(130, 40), sunColor: '#93a9d9', sunIntensity: 0.55, hemiSky: '#34425e', hemiGround: '#0c0e12', hemiIntensity: 0.7, background: '#090b10', fog: '#090b10', fogDensity: 0.00042, envIntensity: 0.1, exposure: 1.2 };
+// São Paulo (hemisfério sul): o sol do meio do dia fica ao norte. Valores por modo em modes/modeStyles.ts.
+export function lightPreset(mode: VisualMode, time: LightingMode): LightPreset & { setup: LightSetup } {
+  const st = styleOf(mode).light[time];
+  return { ...st, sun: sunDir(st.sun[0], st.sun[1]), setup: st };
+}
+
+/** Domo de céu em gradiente (GAME MODE): ciano limpo no alto, claro no horizonte. */
+function SkyDome({ top, horizon }: { top: string; horizon: string }) {
+  const mat = useMemo(
+    () =>
+      new THREE.ShaderMaterial({
+        side: THREE.BackSide,
+        depthWrite: false,
+        fog: false,
+        uniforms: { uTop: { value: new THREE.Color(top) }, uHor: { value: new THREE.Color(horizon) } },
+        vertexShader: "varying vec3 vP; void main(){ vP = normalize(position); gl_Position = projectionMatrix * modelViewMatrix * vec4(position,1.0); }",
+        fragmentShader: "uniform vec3 uTop; uniform vec3 uHor; varying vec3 vP; void main(){ float h = clamp(vP.y, 0.0, 1.0); vec3 c = vP.y < 0.0 ? uHor : mix(uHor, uTop, pow(h, 0.55)); gl_FragColor = vec4(c, 1.0); #include <colorspace_fragment> }",
+      }),
+    [top, horizon],
+  );
+  return (
+    <mesh material={mat} renderOrder={-10} frustumCulled={false}>
+      <sphereGeometry args={[5500, 32, 16]} />
+    </mesh>
+  );
 }
 
 export function Lighting() {
@@ -107,7 +122,7 @@ export function Lighting() {
       cam.far = 4200;
       cam.updateProjectionMatrix();
     }
-    l.shadow.bias = mode === 'sim' ? -0.00025 : -0.0004;
+    l.shadow.bias = styleOf(mode).shadowBias;
     l.shadow.normalBias = half / 400;
   });
 
@@ -123,11 +138,12 @@ export function Lighting() {
         castShadow={castShadows}
         shadow-mapSize-width={mapSize}
         shadow-mapSize-height={mapSize}
-        shadow-radius={mode === 'game' ? 6 : 2}
+        shadow-radius={styleOf(mode).shadowRadius}
       />
-      {mode === 'sim' && time !== 'night' && (
-        <Sky distance={6000} sunPosition={sunPos} turbidity={time === 'sunset' ? 6 : 4} rayleigh={time === 'sunset' ? 2.6 : 1.2} mieCoefficient={0.006} mieDirectionalG={0.86} />
+      {preset.setup.sky === 'physical' && (
+        <Sky distance={6000} sunPosition={sunPos} turbidity={preset.setup.turbidity ?? 5} rayleigh={preset.setup.rayleigh ?? 1} mieCoefficient={0.005} mieDirectionalG={0.85} />
       )}
+      {preset.setup.sky === 'gradient' && <SkyDome top={preset.setup.skyTop!} horizon={preset.setup.skyHorizon!} />}
       {time === 'night' && <Stars radius={3000} depth={600} count={1500} factor={40} saturation={0} fade />}
     </>
   );

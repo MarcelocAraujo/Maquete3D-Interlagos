@@ -35,8 +35,9 @@ npm run data:build
 ## O que o app faz
 
 - **Traçado real de 4.309 m**: 25 vias do OSM encadeadas (4.308,2 m brutos; 4.305,7 m após suavização), larguras pelas bordas reais da pista (12–15 m), relevo SRTM (745–787 m).
-- **GAME MODE**: mapa tático estilizado, inspirado em jogos de gestão de F1 — fundo escuro, verde fechado, volumes cinza low-poly, pista em destaque.
-- **SIMULATION MODE**: visual realista de simulador — asfalto com agregados e marcas de borracha, zebras verde/amarelo, escapes turquesa, céu físico, sombras dinâmicas, névoa, AO, cidade com telhados cerâmicos.
+- **GAME MODE**: maquete de videogame em estilo cartoon, inspirada no modelo *Cartoon Race Track Interlagos* (RCC Design, Sketchfab) — facetas planas, cores vivas equilibradas, árvores estilizadas, céu ciano.
+- **SIMULATION MODE**: maquete arquitetônica realista — materiais PBR, asfalto com borracha, solo em tons naturais de oliva/palha/terra, céu físico, sombras e AO.
+- **Estilos centralizados** em `src/scene/modes/modeStyles.ts`.
 - **Desempenho**: terreno detalhado e entorno (prédios, árvores, postes) apenas no autódromo + ~150 m; rio e represas removidos (o lago interno fica).
 - **Troca de modo suave** (crossfade), preservando câmera e seleção. **Iluminação**: dia, fim de tarde e noite (somente luz artificial existente: vias, pátios, prédios — sem iluminação de pista).
 - **Seleção** de curvas (15), retas, setores, boxes, cada uma das 23 garagens, torre/centro de operações, arquibancadas, prédios (13 mil), áreas de escape, barreiras, vegetação, torres, lago, kartódromo, passarela e postos de fiscais. Curvas/retas/setores se **erguem da maquete** com contorno luminoso; o restante escurece.

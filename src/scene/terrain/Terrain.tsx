@@ -4,7 +4,9 @@ import { getWorld } from '../world/world';
 import { groundTexture } from './groundTexture';
 import { useAppStore } from '../../store/useAppStore';
 import { detailTexture } from '../materials/textures';
-import { patchSceneMaterial, sceneUniforms } from '../materials/patch';
+import { sceneUniforms } from '../materials/patch';
+import { styleOf } from '../modes/modeStyles';
+import type { VisualMode } from '../../store/useAppStore';
 import { PLINTH } from './plinth';
 
 /** Margem de entorno (m) além do recorte do autódromo. */
@@ -52,8 +54,12 @@ export function buildTerrainGeometry(x0: number, x1: number, z0: number, z1: num
   return g;
 }
 
-function gameTerrainMaterial(size: number) {
-  const mat = new THREE.MeshStandardMaterial({ map: groundTexture('sim', size), roughness: 0.96, metalness: 0 });
+const terrainCache = new Map<string, THREE.Material>();
+function terrainMaterial(mode: VisualMode, size: number) {
+  const key = `${mode}-${size}`;
+  if (terrainCache.has(key)) return terrainCache.get(key)!;
+  const strength = styleOf(mode).terrainDetail;
+  const mat = new THREE.MeshStandardMaterial({ map: groundTexture(mode, size), roughness: 0.97, metalness: 0, flatShading: false });
   const detail = detailTexture();
   mat.onBeforeCompile = (shader) => {
     shader.uniforms.uDetail = { value: detail };
@@ -68,7 +74,7 @@ function gameTerrainMaterial(size: number) {
         `#include <map_fragment>
 float i3dD1 = texture2D(uDetail, vI3dW.xz / 5.0).r;
 float i3dD2 = texture2D(uDetail, vI3dW.xz / 41.0).r;
-diffuseColor.rgb *= (0.55 + 0.6 * i3dD1) * (0.75 + 0.35 * i3dD2);`,
+diffuseColor.rgb *= mix(1.0, (0.68 + 0.45 * i3dD1) * (0.82 + 0.25 * i3dD2), ${strength.toFixed(2)});`,
       )
       .replace(
         '#include <opaque_fragment>',
@@ -77,15 +83,11 @@ float i3dLum = dot(gl_FragColor.rgb, vec3(0.299, 0.587, 0.114));
 gl_FragColor.rgb = mix(gl_FragColor.rgb, vec3(i3dLum) * 0.55, uSceneDim * 0.65);`,
       );
   };
-  mat.customProgramCacheKey = () => 'terrain-game';
+  mat.customProgramCacheKey = () => `terrain-${mode}`;
+  terrainCache.set(key, mat);
   return mat;
 }
 
-/** GAME MODE (estilo "mapa tático"): cores chapadas escuras, sem textura de detalhe. */
-function stylizedTerrainMaterial(size: number) {
-  const mat = new THREE.MeshStandardMaterial({ map: groundTexture('game', size), roughness: 1, metalness: 0 });
-  return patchSceneMaterial(mat, 'terrain-game');
-}
 
 export function Terrain() {
   const mode = useAppStore((s) => s.mode);
@@ -109,7 +111,7 @@ export function Terrain() {
     return buildTerrainGeometry(Math.max(-H, PLINTH.x0 - m), Math.min(H, PLINTH.x1 + m), Math.max(-H, PLINTH.z0 - m), Math.min(H, PLINTH.z1 + m), 40, -0.8);
   }, [mode, H]);
 
-  const material = useMemo(() => (mode === 'sim' ? gameTerrainMaterial(texSize) : stylizedTerrainMaterial(texSize)), [mode, texSize]);
+  const material = useMemo(() => terrainMaterial(mode, texSize), [mode, texSize]);
 
   return (
     <group visible={visible}>

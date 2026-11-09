@@ -240,3 +240,39 @@ export const glowTexture = () =>
       }
     return makeTexture(data, S, true, false);
   });
+
+/** Concreto com padrão hexagonal (muros estilizados do GAME MODE). */
+export const hexTexture = () =>
+  memo('hex', () => {
+    const W = 128;
+    const H = 222; // ~ proporção de hexágonos regulares
+    const c = document.createElement('canvas');
+    c.width = W;
+    c.height = H;
+    const ctx = c.getContext('2d')!;
+    ctx.fillStyle = '#ffffff';
+    ctx.fillRect(0, 0, W, H);
+    ctx.strokeStyle = 'rgba(70,64,52,0.55)';
+    ctx.lineWidth = 3;
+    const r = 37;
+    const hex = (cx: number, cy: number) => {
+      ctx.beginPath();
+      for (let i = 0; i < 6; i++) {
+        const a = (Math.PI / 3) * i;
+        const x = cx + r * Math.cos(a);
+        const y = cy + r * Math.sin(a);
+        if (i) ctx.lineTo(x, y);
+        else ctx.moveTo(x, y);
+      }
+      ctx.closePath();
+      ctx.stroke();
+    };
+    for (const [cx, cy] of [
+      [0, 0], [W, 0], [0, H], [W, H], [W / 2 + 0, H / 2], [0, H / 2 * 0 + 111], [W, 111], [64, 0], [64, H],
+    ] as [number, number][]) hex(cx, cy);
+    const t = new THREE.CanvasTexture(c);
+    t.wrapS = t.wrapT = THREE.RepeatWrapping;
+    t.colorSpace = THREE.SRGBColorSpace;
+    t.anisotropy = 8;
+    return t;
+  });

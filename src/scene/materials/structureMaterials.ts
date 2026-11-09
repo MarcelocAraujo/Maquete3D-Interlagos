@@ -1,7 +1,8 @@
 import * as THREE from 'three';
 import type { VisualMode } from '../../store/useAppStore';
 import { patchSceneMaterial, sceneUniforms } from './patch';
-import { concreteTexture, fenceTexture, asphaltTextures } from './textures';
+import { concreteTexture, fenceTexture, asphaltTextures, hexTexture } from './textures';
+import { styleOf } from '../modes/modeStyles';
 
 export type StructMat =
   | 'white'
@@ -28,9 +29,9 @@ const cache = new Map<string, THREE.Material>();
 /** Vidro: reflexivo de dia; à noite, emissivo (ambientes iluminados). */
 function glassMaterial(mode: VisualMode) {
   const m = new THREE.MeshStandardMaterial({
-    color: mode === 'sim' ? '#2c3b48' : '#4f6878',
-    roughness: mode === 'sim' ? 0.08 : 0.6,
-    metalness: mode === 'sim' ? 0.6 : 0,
+    color: styleOf(mode).structure.glass.color,
+    roughness: styleOf(mode).structure.glass.roughness ?? 0.1,
+    metalness: styleOf(mode).structure.glass.metalness ?? 0.3,
     emissive: new THREE.Color('#ffe2b0'),
     emissiveIntensity: 0,
   });
@@ -48,70 +49,41 @@ function glassMaterial(mode: VisualMode) {
 export function structMat(mode: VisualMode, key: StructMat): THREE.Material {
   const k = `${mode}-${key}`;
   if (cache.has(k)) return cache.get(k)!;
-  const game = mode === 'sim';
+  const style = styleOf(mode);
+  const sp = style.structure[key] ?? { color: '#cccccc' };
+  const flatShading = style.flat;
+  const textured = !!sp.textured;
+  const base = { color: sp.color, roughness: sp.roughness ?? 0.85, metalness: sp.metalness ?? 0, flatShading };
+  const concreteMap = textured ? (mode === 'game' && key === 'concrete' ? hexTexture() : concreteTexture()) : null;
   let m: THREE.Material;
   switch (key) {
-    case 'white':
-      m = new THREE.MeshStandardMaterial({ color: game ? '#dcdad4' : '#a2a8ad', roughness: game ? 0.75 : 0.95, map: game ? concreteTexture() : null });
-      break;
-    case 'concrete':
-      m = new THREE.MeshStandardMaterial({ color: game ? '#bdbab2' : '#8f959a', roughness: 0.9, map: game ? concreteTexture() : null });
-      break;
-    case 'darkConcrete':
-      m = new THREE.MeshStandardMaterial({ color: game ? '#8e8b84' : '#7c8288', roughness: 0.95, map: game ? concreteTexture() : null });
-      break;
     case 'glass':
       m = glassMaterial(mode);
-      break;
-    case 'metal':
-      m = new THREE.MeshStandardMaterial({ color: game ? '#a9adb1' : '#8b9095', roughness: game ? 0.35 : 0.9, metalness: game ? 0.8 : 0 });
-      break;
-    case 'darkMetal':
-      m = new THREE.MeshStandardMaterial({ color: game ? '#3c4046' : '#5b6066', roughness: 0.5, metalness: game ? 0.7 : 0 });
-      break;
-    case 'interior':
-      m = new THREE.MeshStandardMaterial({ color: game ? '#1b1d21' : '#2a2d31', roughness: 0.9 });
-      break;
-    case 'shutter':
-      m = new THREE.MeshStandardMaterial({ color: game ? '#d2d4d6' : '#a8adb2', roughness: 0.55, metalness: game ? 0.3 : 0 });
-      break;
-    case 'roof':
-      m = new THREE.MeshStandardMaterial({ color: game ? '#cfcdc6' : '#aeb3b8', roughness: 0.8, map: game ? concreteTexture() : null });
       break;
     case 'fence': {
       const t = fenceTexture().clone();
       t.needsUpdate = true;
-      m = new THREE.MeshStandardMaterial({ color: game ? '#b8bcc0' : '#6b7278', map: t, alphaTest: 0.35, side: THREE.DoubleSide, roughness: 0.6, metalness: game ? 0.5 : 0, transparent: false });
+      m = new THREE.MeshStandardMaterial({ ...base, map: t, alphaTest: 0.35, side: THREE.DoubleSide, transparent: false });
       break;
     }
-    case 'guardrail':
-      m = new THREE.MeshStandardMaterial({ color: game ? '#c3c7cb' : '#9aa0a5', roughness: 0.3, metalness: game ? 0.85 : 0 });
-      break;
-    case 'tyre':
-      m = new THREE.MeshStandardMaterial({ color: game ? '#1a1b1d' : '#2b2d30', roughness: 0.95 });
-      break;
     case 'pitAsphalt': {
       const t = asphaltTextures();
-      m = new THREE.MeshStandardMaterial({ color: game ? '#d6d6d6' : '#55595e', map: game ? t.map : null, normalMap: game ? t.normalMap : null, roughness: 0.9, polygonOffset: true, polygonOffsetFactor: -1, polygonOffsetUnits: -1 });
+      m = new THREE.MeshStandardMaterial({ ...base, map: textured ? t.map : null, normalMap: textured ? t.normalMap : null, polygonOffset: true, polygonOffsetFactor: -1, polygonOffsetUnits: -1 });
       break;
     }
     case 'paint':
       m = new THREE.MeshStandardMaterial({ color: '#f2f2ee', roughness: 0.6, polygonOffset: true, polygonOffsetFactor: -3, polygonOffsetUnits: -3 });
       break;
     case 'water':
-      m = new THREE.MeshStandardMaterial({ color: game ? '#2a4f57' : '#2c5a68', roughness: game ? 0.06 : 0.9, metalness: game ? 0.25 : 0, transparent: game, opacity: game ? 0.92 : 1 });
+      m = new THREE.MeshStandardMaterial({ ...base, flatShading: false, transparent: mode === 'sim', opacity: mode === 'sim' ? 0.93 : 1 });
       break;
     case 'lamp':
       m = new THREE.MeshBasicMaterial({ color: '#fff3d6', toneMapped: false });
       break;
-    case 'redWhite':
-      m = new THREE.MeshStandardMaterial({ color: game ? '#d6332b' : '#a35b55', roughness: 0.6 });
-      break;
-    case 'seatBase':
-      m = new THREE.MeshStandardMaterial({ color: game ? '#9d9f9f' : '#7d8287', roughness: 0.9, map: game ? concreteTexture() : null });
-      break;
+    default:
+      m = new THREE.MeshStandardMaterial({ ...base, map: concreteMap });
   }
-  if (key !== 'lamp') patchSceneMaterial(m!, `struct-${key}`);
-  cache.set(k, m!);
-  return m!;
+  if (key !== 'lamp') patchSceneMaterial(m, `struct-${key}`);
+  cache.set(k, m);
+  return m;
 }
