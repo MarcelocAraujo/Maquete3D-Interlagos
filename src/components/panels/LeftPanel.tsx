@@ -210,6 +210,7 @@ export function LeftPanel() {
         <Section title="Estruturas" icon={<Building2 size={14} />} defaultOpen={false}>
           {[
             { kind: 'building', id: 'paddock', label: 'Paddock e edifício das equipes', facility: true },
+            { kind: 'structure', id: 'paddock-veiculos', label: 'Trailers e veículos do paddock' },
             { kind: 'structure', id: 'kart', label: 'Kartódromo Ayrton Senna' },
             { kind: 'water', id: 'lake', label: 'Lago interno' },
             { kind: 'structure', id: 'drag', label: 'Pista de arrancada' },

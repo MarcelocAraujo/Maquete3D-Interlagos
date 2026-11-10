@@ -78,6 +78,20 @@ export const FACILITIES: Record<string, FacilityInfo> = {
     ],
     sources: ['news-reforma-boxes', 'osm'],
   },
+  'paddock-veiculos': {
+    id: 'paddock-veiculos',
+    kind: 'structure',
+    name: 'Paddock em funcionamento',
+    subtitle: 'Transportadores, motorhomes, tendas, contêineres e veículos de apoio',
+    description: 'Cena ilustrativa de um fim de semana de corrida: transportadores das equipes em fileira atrás dos boxes, motorhomes/hospitalidade, tendas de serviço, contêineres e vans de apoio, além de carros nos estacionamentos mapeados no OSM. Quantidades, cores e posições exatas variam a cada evento e não são documentadas.',
+    facts: [
+      f('Posição dos estacionamentos', 'Polígonos amenity=parking (OSM)', 'secundaria', ['osm']),
+      f('Arranjo do paddock', 'Fileiras atrás do prédio dos boxes, afastadas da pista e do pit lane', 'estimativa'),
+      f('Dimensões dos veículos', 'Típicas (semirreboque ~16,5 m, motorhome ~12 m, van ~5,4 m, carro ~4,5 m)', 'estimativa'),
+      f('Ocupação real em um GP', 'Não disponível', 'indisponivel'),
+    ],
+    sources: ['osm'],
+  },
   'kart': {
     id: 'kart',
     kind: 'structure',

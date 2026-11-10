@@ -7,6 +7,7 @@ import { useAppStore, type VisualMode } from '../../store/useAppStore';
 import { structMat } from '../materials/structureMaterials';
 import { lightPoolTexture, glowTexture } from '../materials/textures';
 import { insideArea } from '../terrain/plinth';
+import { computePitFrame } from './PitComplex';
 import { registerSelectable } from '../selection/bounds';
 import { onHoverEvent, onSelectEvent } from '../selection/events';
 import type { Selection } from '../../data/types';
@@ -58,10 +59,11 @@ export function Props() {
     const r = rng(5);
     const H = (x: number, z: number) => height.sample(x, z);
 
-    // --- postes de iluminação: vias arteriais (lit=yes no OSM) + estacionamentos/pátios do complexo
+    // --- iluminação: só onde ela existe/é necessária (sem postes espalhados pelo gramado)
     const poles: { x: number; z: number; h: number; rot: number }[] = [];
+    // a) avenidas do entorno (lit=yes no OSM), apenas fora do perímetro do autódromo
     for (const rd of features.roads) {
-      if (!['primary', 'secondary', 'tertiary'].includes(rd.k)) continue;
+      if (!['primary', 'secondary'].includes(rd.k)) continue;
       let acc = 0;
       for (let i = 0; i < rd.p.length - 1; i++) {
         const a = rd.p[i];
@@ -70,21 +72,30 @@ export function Props() {
         if (L < 0.5) continue;
         const nx = (b[1] - a[1]) / L;
         const nz = -(b[0] - a[0]) / L;
-        for (let d = (36 - (acc % 36)) % 36; d < L; d += 36) {
-          const side = Math.floor((acc + d) / 36) % 2 ? 1 : -1;
+        for (let d = (40 - (acc % 40)) % 40; d < L; d += 40) {
+          const side = Math.floor((acc + d) / 40) % 2 ? 1 : -1;
           const x = a[0] + ((b[0] - a[0]) * d) / L + nx * side * (rd.w / 2 + 0.8);
           const z = a[1] + ((b[1] - a[1]) * d) / L + nz * side * (rd.w / 2 + 0.8);
-          if (keep(x, z)) poles.push({ x, z, h: 9, rot: Math.atan2(-nx * side, -nz * side) });
+          if (keep(x, z) && !pointInPoly(x, z, features.complex)) poles.push({ x, z, h: 9, rot: Math.atan2(-nx * side, -nz * side) });
         }
         acc += L;
       }
     }
-    for (const l of features.landuse) {
-      if (l.k !== 'parking' && l.k !== 'paved') continue;
-      const bb = polyBounds(l.poly);
-      for (let x = bb.minX + 15; x < bb.maxX; x += 38)
-        for (let z = bb.minZ + 15; z < bb.maxZ; z += 38) if (pointInPoly(x, z, l.poly) && keep(x, z)) poles.push({ x, z, h: 14, rot: r() * 6.28 });
+    // b) pit lane: postes junto à fachada dos boxes; c) paddock: torres nas laterais das fileiras de trailers
+    {
+      const fr = computePitFrame();
+      const n = Math.floor(fr.L / 30);
+      for (let i = 0; i <= n; i++) {
+        const t = -fr.L / 2 + (fr.L * i) / n;
+        const px = fr.c.x + fr.along.x * t;
+        const pz = fr.c.y + fr.along.y * t;
+        // pit lane (frente do prédio, junto ao muro dos boxes)
+        poles.push({ x: px + fr.front.x * (fr.W / 2 + 14.5), z: pz + fr.front.y * (fr.W / 2 + 14.5), h: 11, rot: Math.atan2(fr.front.x, fr.front.y) });
+        // paddock (atrás do prédio)
+        if (i % 2 === 0) poles.push({ x: px - fr.front.x * (fr.W / 2 + 42), z: pz - fr.front.y * (fr.W / 2 + 42), h: 15, rot: 0 });
+      }
     }
+    // d) luminárias mapeadas no OSM
     for (const p of features.points.lamp) if (keep(p[0], p[1])) poles.push({ x: p[0], z: p[1], h: 8, rot: 0 });
 
     // --- torres de transmissão e cabos

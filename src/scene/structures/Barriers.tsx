@@ -10,7 +10,7 @@ import { polylineWall } from './polylineStrip';
 import { insideArea } from '../terrain/plinth';
 import { onHoverEvent, onSelectEvent } from '../selection/events';
 
-type BType = 'guardrail' | 'tyre' | 'wall';
+type BType = 'guardrail' | 'tyre' | 'wall' | 'wallFence';
 
 interface Run {
   type: BType;
@@ -46,10 +46,18 @@ function computeRuns(): Run[] {
           if (e > 0.3) type = 'tyre';
         }
       }
+      // tipologia por trecho (estimativa a partir de imagens aéreas e das notas da FIA 2022)
       const main = s > 3800 || s < 330;
+      const oposta = s > 840 && s < 1380;
+      const publicArea = s > 3150 && s <= 3800; // área de público entre as curvas 10 e 14 (FIA 2022: novas cercas)
       if (main) {
         off = side === 1 ? 4.5 : 3.2;
-        type = 'wall';
+        type = side === 1 ? 'wall' : 'wallFence'; // arquibancadas do lado de fora da reta
+      } else if (oposta && type !== 'tyre') {
+        off = 5;
+        type = side === -1 ? 'wallFence' : 'wall'; // Setor G (temporário) do lado externo
+      } else if (publicArea && type !== 'tyre' && side === -1) {
+        type = 'wallFence';
       }
       const x = f.x + f.lx * side * (w + off);
       const z = f.z + f.lz * side * (w + off);
@@ -85,6 +93,22 @@ export function Barriers() {
     const tyres: THREE.BufferGeometry[] = [];
     const walls: THREE.BufferGeometry[] = [];
     const fences: THREE.BufferGeometry[] = [];
+    const fencePosts: THREE.Matrix4[] = [];
+    // postes do alambrado a cada ~3,5 m, com braço inclinado para a pista
+    const addFencePosts = (r: Run, y0: number) => {
+      let acc = 0;
+      for (let i = 1; i < r.pts.length; i++) {
+        const a = r.pts[i - 1];
+        const b = r.pts[i];
+        acc += Math.hypot(b[0] - a[0], b[2] - a[2]);
+        if (acc < 3.5) continue;
+        acc = 0;
+        const ns = nearestS(b[0], b[2]);
+        const fr = frameAt(ns.s);
+        const ang = Math.atan2(-(fr.z - b[2]), fr.x - b[0]); // aponta o braço para a pista
+        fencePosts.push(new THREE.Matrix4().makeRotationY(ang).setPosition(b[0], b[1] + y0, b[2]));
+      }
+    };
     for (const r of runs) {
       if (r.type === 'guardrail') {
         rails.push(polylineWall(r.pts, 0.45, 0.78, 4));
@@ -95,10 +119,14 @@ export function Barriers() {
         }
       } else if (r.type === 'tyre') {
         tyres.push(polylineWall(r.pts, -0.2, 1.15, 1.2));
-        fences.push(polylineWall(r.pts.map((p) => [p[0], p[1], p[2]] as [number, number, number]), 1.15, 4.6, 3, false));
+        fences.push(polylineWall(r.pts, 1.15, 4.6, 3, false));
+        addFencePosts(r, 0);
+      } else if (r.type === 'wallFence') {
+        walls.push(polylineWall(r.pts, -0.3, 1.25, 3));
+        fences.push(polylineWall(r.pts, 1.25, 5.2, 3, false));
+        addFencePosts(r, 0);
       } else {
-        walls.push(polylineWall(r.pts, -0.3, 1.1, 3));
-        fences.push(polylineWall(r.pts, 1.1, 4.4, 3, false));
+        walls.push(polylineWall(r.pts, -0.3, 1.0, 3));
       }
     }
     // cercas e muros mapeados no OSM
@@ -112,6 +140,7 @@ export function Barriers() {
       tyres: tyres.length ? mergeGeometries(tyres) : null,
       walls: walls.length ? mergeGeometries(walls) : null,
       fences: fences.length ? mergeGeometries(fences) : null,
+      fencePosts,
     };
   }, [mode]);
 
@@ -124,12 +153,28 @@ export function Barriers() {
     return m;
   }, [geos, mode]);
 
+  const fencePostMesh = useMemo(() => {
+    // poste 5,2 m + braço de 0,9 m inclinado (aponta para +X local = pista)
+    const post = new THREE.BoxGeometry(0.11, 5.3, 0.11).translate(0, 2.65, 0);
+    const arm = new THREE.BoxGeometry(0.9, 0.08, 0.08).translate(0.45, 0, 0);
+    arm.rotateZ(0.6);
+    arm.translate(0, 5.3, 0);
+    const g = mergeGeometries([post, arm]);
+    const m = new THREE.InstancedMesh(g, structMat(mode, 'darkMetal'), geos.fencePosts.length);
+    geos.fencePosts.forEach((mt, i) => m.setMatrixAt(i, mt));
+    m.instanceMatrix.needsUpdate = true;
+    m.castShadow = true;
+    m.computeBoundingSphere();
+    return m;
+  }, [geos, mode]);
+
   if (!show) return null;
   const sel = (id: string) => ({ kind: 'barrier' as const, id });
   return (
     <group>
       {geos.rails && <mesh geometry={geos.rails} material={structMat(mode, 'guardrail')} castShadow receiveShadow onClick={onSelectEvent(sel('guardrail'))} {...onHoverEvent(sel('guardrail'))} />}
       <primitive object={postMesh} />
+      <primitive object={fencePostMesh} />
       {geos.tyres && <mesh geometry={geos.tyres} material={structMat(mode, 'tyre')} castShadow receiveShadow onClick={onSelectEvent(sel('tyre'))} {...onHoverEvent(sel('tyre'))} />}
       {geos.walls && <mesh geometry={geos.walls} material={structMat(mode, 'concrete')} castShadow receiveShadow onClick={onSelectEvent(sel('wall'))} {...onHoverEvent(sel('wall'))} />}
       {geos.fences && <mesh geometry={geos.fences} material={structMat(mode, 'fence')} onClick={onSelectEvent(sel('fence'))} {...onHoverEvent(sel('fence'))} />}

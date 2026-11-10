@@ -15,8 +15,19 @@ const PIT_SEL: Selection = { kind: 'pit', id: 'pit' };
 const TOWER_SEL: Selection = { kind: 'structure', id: 'control-tower' };
 
 /** Referencial do prédio dos boxes a partir da pegada OSM (retângulo mínimo). */
+let pitFrameCache: ReturnType<typeof buildPitFrame> | null = null;
+/** Referencial do prédio dos boxes (compartilhado por boxes, paddock e iluminação). */
+export function computePitFrame() {
+  if (!pitFrameCache) pitFrameCache = buildPitFrame();
+  return pitFrameCache;
+}
+
 export function usePitFrame() {
-  return useMemo(() => {
+  return useMemo(() => computePitFrame(), []);
+}
+
+function buildPitFrame() {
+  {
     const { features, height } = getWorld();
     const rect = features.pitBuildingCandidates[0].rect;
     const pit = TRACK.pit;
@@ -43,7 +54,7 @@ export function usePitFrame() {
     const frontCenter = c.clone().addScaledVector(front, W / 2);
     const baseY = height.sample(frontCenter.x, frontCenter.y);
     return { c, W, L, rotY, flipZ, baseY, along, front, frontCenter };
-  }, []);
+  }
 }
 
 export function PitComplex() {
