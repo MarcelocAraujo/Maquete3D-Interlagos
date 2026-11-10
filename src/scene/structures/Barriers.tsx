@@ -6,12 +6,20 @@ import { getWorld } from '../world/world';
 import { useAppStore } from '../../store/useAppStore';
 import { structMat } from '../materials/structureMaterials';
 import { computeRunoffs, envelope } from '../track/geometry';
-import { polylineWall } from './polylineStrip';
+import { offsetPolyline, polylineBlock, polylineWall } from './polylineStrip';
 import { getAssets, instanceProto, modulesAlong, type AssetProto } from '../assets/assetLibrary';
 import { insideArea } from '../terrain/plinth';
+import { pitLaneRange } from './PitComplex';
 import { onHoverEvent, onSelectEvent } from '../selection/events';
 
-type BType = 'guardrail' | 'tyre' | 'wall' | 'wallFence';
+/**
+ * guardrail  – defensa metálica dupla (miolo, trechos sem área de escape)
+ * tyreRail   – barreira de pneus com guard-rail atrás (fim das áreas de escape no miolo)
+ * tyreFence  – barreira de pneus com tela alta atrás (áreas de público)
+ * wall       – muro de concreto (Laranjinha, lado interno da reta)
+ * wallFence  – muro + tela alta (reta dos boxes, Reta Oposta, Mergulho/Junção)
+ */
+type BType = 'guardrail' | 'tyreRail' | 'tyreFence' | 'wall' | 'wallFence';
 
 interface Run {
   type: BType;
@@ -20,16 +28,24 @@ interface Run {
 }
 
 /**
- * Barreiras ao longo da pista, posicionadas a partir das áreas de escape:
- * pneus + alambrado no fim das áreas de escape, muro + alambrado na reta dos
- * boxes e guard-rail nos demais trechos. Tipos e afastamentos = estimativa
- * baseada em imagens aéreas (ver docs/METODOLOGIA.md).
+ * Barreiras ao longo da pista, posicionadas a partir das áreas de escape e no
+ * padrão do modelo de referência: sempre barreira de pneus no fim das áreas de
+ * escape, tela alta apenas onde há público, guard-rail separando a saída dos
+ * boxes da pista. Tipos e afastamentos = estimativa (ver docs/METODOLOGIA.md).
  */
 function computeRuns(): Run[] {
   const { height } = getWorld();
   const runoffs = computeRunoffs();
-  const pitPts = TRACK.pit.x.map((x, i) => [x, TRACK.pit.z[i]] as [number, number]);
-  const nearPit = (x: number, z: number) => pitPts.some((p) => (p[0] - x) ** 2 + (p[1] - z) ** 2 < 15 ** 2);
+  const pr = pitLaneRange();
+  const pitPts = TRACK.pit.x.map((x, i) => [x, TRACK.pit.z[i]] as [number, number]).slice(pr.iStart, pr.iEnd + 1);
+  const pb = { x0: Math.min(...TRACK.pit.x) - 40, x1: Math.max(...TRACK.pit.x) + 40, z0: Math.min(...TRACK.pit.z) - 40, z1: Math.max(...TRACK.pit.z) + 40 };
+  const pitD2 = (x: number, z: number) => {
+    if (x < pb.x0 || x > pb.x1 || z < pb.z0 || z > pb.z1) return Infinity;
+    let d = Infinity;
+    for (let i = 0; i < pitPts.length; i += 2) d = Math.min(d, (pitPts[i][0] - x) ** 2 + (pitPts[i][1] - z) ** 2);
+    return d;
+  };
+  const nearPit = (x: number, z: number) => pitD2(x, z) < 15 ** 2;
   const runs: Run[] = [];
   const step = 3;
   for (const side of [1, -1] as const) {
@@ -37,28 +53,44 @@ function computeRuns(): Run[] {
     for (let s = 0; s <= TRACK_LENGTH; s += step) {
       const f = frameAt(s);
       const w = side === 1 ? f.wl : f.wr;
-      let off = 7;
+      let off = 6;
       let type: BType = 'guardrail';
+      let inRunoff = false;
       for (const z of runoffs) {
         if (z.side !== side) continue;
         const e = envelope(s, z.s0, z.s1, 25);
         if (e > 0) {
-          off = Math.max(off, 0.3 + z.depth * e + 2.5);
-          if (e > 0.3) type = 'tyre';
+          off = Math.max(off, 0.3 + z.depth * e + 0.8);
+          if (e > 0.3) {
+            type = z.barrier;
+            inRunoff = true;
+          }
         }
       }
-      // tipologia por trecho (estimativa a partir de imagens aéreas e das notas da FIA 2022)
+      // tipologia por trecho (estimativa a partir de imagens aéreas, notas da FIA 2022 e do modelo de referência)
       const main = s > 3800 || s < 330;
       const oposta = s > 840 && s < 1380;
       const publicArea = s > 3150 && s <= 3800; // área de público entre as curvas 10 e 14 (FIA 2022: novas cercas)
       if (main) {
         off = side === 1 ? 4.5 : 3.2;
         type = side === 1 ? 'wall' : 'wallFence'; // arquibancadas do lado de fora da reta
-      } else if (oposta && type !== 'tyre') {
+      } else if (oposta && !inRunoff) {
         off = 5;
         type = side === -1 ? 'wallFence' : 'wall'; // Setor G (temporário) do lado externo
-      } else if (publicArea && type !== 'tyre' && side === -1) {
+      } else if (publicArea && !inRunoff && side === -1) {
         type = 'wallFence';
+      }
+      // saída dos boxes correndo ao lado da pista (Curva do Sol): guard-rail no meio do caminho
+      if (!main) {
+        for (let lat = w + 1; lat < w + off + 6; lat += 0.75) {
+          const px = f.x + f.lx * side * lat;
+          const pz = f.z + f.lz * side * lat;
+          if (pitD2(px, pz) < 4.2 ** 2) {
+            off = Math.max(1.4, (lat - w) / 2);
+            type = 'guardrail';
+            break;
+          }
+        }
       }
       const x = f.x + f.lx * side * (w + off);
       const z = f.z + f.lz * side * (w + off);
@@ -115,49 +147,47 @@ export function Barriers() {
     const assetRuns: { proto: AssetProto; pts: [number, number, number][] }[] = [];
     const pickProto = (list: AssetProto[], i: number) => list[i % list.length];
     let runIdx = 0;
+    // lado "de fora" (oposto à pista) da polilinha: a pista fica à direita quando side = 1
+    const away = (r: Run, d: number) => offsetPolyline(r.pts, r.side === 1 ? d : -d);
+    const guardrail = (pts: [number, number, number][]) => {
+      rails.push(polylineWall(pts, 0.45, 0.78, 4));
+      rails.push(polylineWall(pts, 0.88, 1.18, 4));
+      for (let i = 0; i < pts.length; i += 1) posts.push(new THREE.Matrix4().makeTranslation(pts[i][0], pts[i][1] + 0.6, pts[i][2]));
+    };
+    const tallFence = (pts: [number, number, number][], h0: number, r: Run) => {
+      fences.push(polylineWall(pts, h0, 5.6, 3, false));
+      addFencePosts({ ...r, pts }, 0);
+    };
     for (const r of runs) {
       runIdx++;
-      if (r.type === 'tyre' && A.tyre.length) {
-        assetRuns.push({ proto: pickProto(A.tyre, runIdx), pts: r.pts });
-        fences.push(polylineWall(r.pts, 1.15, 4.6, 3, false));
-        addFencePosts(r, 0);
+      const isTyre = r.type === 'tyreRail' || r.type === 'tyreFence';
+      if (isTyre) {
+        if (A.tyre.length) assetRuns.push({ proto: pickProto(A.tyre, runIdx), pts: r.pts });
+        // bloco de pneus (≈1,1 m de altura, 1,2 m de espessura)
+        else tyres.push(polylineBlock(r.pts, -0.2, 1.1, 1.2, 1.2));
+        if (r.type === 'tyreRail') guardrail(away(r, 1.3));
+        else tallFence(away(r, 1.1), -0.1, r);
         continue;
       }
       if (r.type === 'wallFence' && (A.fence.length || A.wall.length)) {
         assetRuns.push({ proto: A.fence.length ? pickProto(A.fence, runIdx) : pickProto(A.wall, runIdx), pts: r.pts });
-        if (!A.fence.length) {
-          fences.push(polylineWall(r.pts, 1.25, 5.2, 3, false));
-          addFencePosts(r, 0);
-        }
+        if (!A.fence.length) tallFence(r.pts, 1.2, r);
         continue;
       }
       if (r.type === 'wall' && A.wall.length) {
         assetRuns.push({ proto: pickProto(A.wall, runIdx), pts: r.pts });
         continue;
       }
-      if (r.type === 'guardrail') {
-        rails.push(polylineWall(r.pts, 0.45, 0.78, 4));
-        rails.push(polylineWall(r.pts, 0.88, 1.18, 4));
-        for (let i = 0; i < r.pts.length; i += 1) {
-          const p = r.pts[i];
-          posts.push(new THREE.Matrix4().makeTranslation(p[0], p[1] + 0.6, p[2]));
-        }
-      } else if (r.type === 'tyre') {
-        tyres.push(polylineWall(r.pts, -0.2, 1.15, 1.2));
-        fences.push(polylineWall(r.pts, 1.15, 4.6, 3, false));
-        addFencePosts(r, 0);
-      } else if (r.type === 'wallFence') {
-        walls.push(polylineWall(r.pts, -0.3, 1.25, 3));
-        fences.push(polylineWall(r.pts, 1.25, 5.2, 3, false));
-        addFencePosts(r, 0);
-      } else {
-        walls.push(polylineWall(r.pts, -0.3, 1.0, 3));
-      }
+      if (r.type === 'guardrail') guardrail(r.pts);
+      else if (r.type === 'wallFence') {
+        walls.push(polylineBlock(r.pts, -0.3, 1.2, 0.45, 3));
+        tallFence(r.pts, 1.2, r);
+      } else walls.push(polylineBlock(r.pts, -0.3, 1.1, 0.45, 3));
     }
-    // cercas e muros mapeados no OSM
+    // Cercas do OSM (perímetro de terrenos) ficam de fora: cruzavam as telas da pista.
+    // Muros do OSM só longe da pista.
     const lift = (pts: [number, number][]) => pts.map((p) => [p[0], height.sample(p[0], p[1]) - 0.1, p[1]] as [number, number, number]);
-    const keep = (pts: [number, number][]) => pts.every((p) => insideArea(p[0], p[1]));
-    for (const f of features.lines.fence) if (keep(f)) fences.push(polylineWall(lift(f), 0, 2.2, 3, false));
+    const keep = (pts: [number, number][]) => pts.every((p) => insideArea(p[0], p[1]) && nearestS(p[0], p[1]).d > 25);
     for (const w of features.lines.wall) if (keep(w)) walls.push(polylineWall(lift(w), -0.3, 2.4, 3));
     return {
       rails: rails.length ? mergeGeometries(rails) : null,

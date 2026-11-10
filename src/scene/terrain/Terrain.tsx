@@ -7,7 +7,7 @@ import { detailTexture } from '../materials/textures';
 import { sceneUniforms } from '../materials/patch';
 import { styleOf } from '../modes/modeStyles';
 import type { VisualMode } from '../../store/useAppStore';
-import { PLINTH } from './plinth';
+import { LANDMARK_BUILDINGS, PLINTH } from './plinth';
 
 /** Margem de entorno (m) além do recorte do autódromo. */
 export const TERRAIN_MARGIN = -30; // ≈200 m além do traçado; fora disso, nada
@@ -102,7 +102,18 @@ export function Terrain() {
   // malha detalhada só sobre o autódromo + margem; entorno em malha grossa (apenas no modo realista)
   const inner = useMemo(() => {
     const m = TERRAIN_MARGIN;
-    return buildTerrainGeometry(PLINTH.x0 - m, PLINTH.x1 + m, PLINTH.z0 - m, PLINTH.z1 + m, step);
+    // estende o terreno até os prédios-referência que ficam além do recorte
+    const b = { x0: PLINTH.x0 - m, x1: PLINTH.x1 + m, z0: PLINTH.z0 - m, z1: PLINTH.z1 + m };
+    for (const f of getWorld().features.buildings) {
+      if (!LANDMARK_BUILDINGS.has(f.id)) continue;
+      for (const [x, z] of f.poly) {
+        b.x0 = Math.min(b.x0, x - 25);
+        b.x1 = Math.max(b.x1, x + 25);
+        b.z0 = Math.min(b.z0, z - 25);
+        b.z1 = Math.max(b.z1, z + 25);
+      }
+    }
+    return buildTerrainGeometry(b.x0, b.x1, b.z0, b.z1, step);
   }, [step]);
   const outer = useMemo(() => {
     return null; // entorno distante removido (desempenho)

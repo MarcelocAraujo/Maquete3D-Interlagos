@@ -89,9 +89,15 @@ export interface ModeStyle {
     lineFar: [number, number, number];
     kerb: [string, string];
     kerbRoughness: number;
+    /** faixa estreita pintada junto às zebras (verde escuro) */
     runoffPaint: string;
+    /** área de escape asfaltada */
     runoffConcrete: string;
+    /** caixa de brita */
+    runoffGravel: string;
     runoffTextured: boolean;
+    /** salsichas (elementos elevados atrás das zebras internas) */
+    sausage: string;
   };
   structure: Record<string, { color: string; roughness?: number; metalness?: number; textured?: boolean }>;
   buildings: {
@@ -171,9 +177,11 @@ export const MODE_STYLES: Record<VisualMode, ModeStyle> = {
       lineFar: [0.05, 0.055, 0.06],
       kerb: ['#16a04a', '#ffd21f'],
       kerbRoughness: 0.55,
-      runoffPaint: '#3aae9f',
-      runoffConcrete: '#cdcac0',
+      runoffPaint: '#2f9446',
+      runoffConcrete: '#80848a',
+      runoffGravel: '#a59a86',
       runoffTextured: false,
+      sausage: '#ffd21f',
     },
     structure: {
       white: { color: '#f3f1eb', roughness: 0.75 },
@@ -211,12 +219,13 @@ export const MODE_STYLES: Record<VisualMode, ModeStyle> = {
     seats: 'brasil',
     light: {
       day: { sun: [35, 50], sunColor: '#fff4e0', sunIntensity: 2.7, hemiSky: '#c4e8ff', hemiGround: '#5e7d3c', hemiIntensity: 1.15, background: '#62c3f0', fog: '#c9ecfa', fogDensity: 0.00034, envIntensity: 0.4, exposure: 1.0, sky: 'gradient', skyTop: '#3fb2ec', skyHorizon: '#c9ecfa' },
-      sunset: { sun: [292, 11], sunColor: '#ffbf80', sunIntensity: 2.3, hemiSky: '#ffd9b8', hemiGround: '#5a4630', hemiIntensity: 0.95, background: '#f4a877', fog: '#ffc48e', fogDensity: 0.00034, envIntensity: 0.3, exposure: 1.0, sky: 'gradient', skyTop: '#6f7fc4', skyHorizon: '#ffc48e' },
+      // fim de tarde: sol baixo e dourado ainda batendo (sombras longas), céu azul no alto e laranja no horizonte
+      sunset: { sun: [292, 13], sunColor: '#ffb066', sunIntensity: 3.1, hemiSky: '#ffd6ae', hemiGround: '#4a3826', hemiIntensity: 0.78, background: '#f2a877', fog: '#f7bb8c', fogDensity: 0.00026, envIntensity: 0.28, exposure: 1.02, sky: 'gradient', skyTop: '#4d6cc0', skyHorizon: '#ffb47a' },
       night: nightLight('#0a1020'),
     },
     post: {
       day: { aoRadius: 5, aoIntensity: 1.8, aoColor: '#1d2a14', bloom: 0.15, bloomThreshold: 0.95, saturation: 0.06, contrast: 0.04, brightness: 0.0, vignette: 0.18, toneMapping: 'neutral' },
-      sunset: { aoRadius: 5, aoIntensity: 1.8, aoColor: '#2a1a10', bloom: 0.2, bloomThreshold: 0.9, saturation: 0.04, contrast: 0.04, brightness: 0.0, vignette: 0.22, toneMapping: 'neutral' },
+      sunset: { aoRadius: 5, aoIntensity: 1.8, aoColor: '#2a1a10', bloom: 0.3, bloomThreshold: 0.86, saturation: 0.14, contrast: 0.1, brightness: 0.0, vignette: 0.24, toneMapping: 'neutral' },
       night: { aoRadius: 5, aoIntensity: 1.6, aoColor: '#000000', bloom: 1.1, bloomThreshold: 0.6, saturation: 0, contrast: 0.04, brightness: 0, vignette: 0.3, toneMapping: 'neutral' },
     },
   },
@@ -262,9 +271,11 @@ export const MODE_STYLES: Record<VisualMode, ModeStyle> = {
       lineFar: [0.13, 0.135, 0.14],
       kerb: ['#1d8a3a', '#e8bc00'],
       kerbRoughness: 0.55,
-      runoffPaint: '#36b0a8',
-      runoffConcrete: '#b4b2ab',
+      runoffPaint: '#2f6e42',
+      runoffConcrete: '#6c6e70',
+      runoffGravel: '#a39883',
       runoffTextured: true,
+      sausage: '#e8bc00',
     },
     structure: {
       white: { color: '#dcdad4', roughness: 0.75, textured: true },
@@ -302,12 +313,12 @@ export const MODE_STYLES: Record<VisualMode, ModeStyle> = {
     seats: 'sector',
     light: {
       day: { sun: [25, 54], sunColor: '#fff0da', sunIntensity: 2.5, hemiSky: '#b8cce0', hemiGround: '#4a4535', hemiIntensity: 0.38, background: '#8ea7bd', fog: '#9fb2c2', fogDensity: 0.00022, envIntensity: 0.18, exposure: 0.86, sky: 'gradient', skyTop: '#5f82a6', skyHorizon: '#9fb2c2' },
-      sunset: { sun: [290, 7], sunColor: '#ffb27a', sunIntensity: 2.6, hemiSky: '#e6c3a6', hemiGround: '#3d3428', hemiIntensity: 0.35, background: '#c9997a', fog: '#c49a7c', fogDensity: 0.00022, envIntensity: 0.16, exposure: 0.92, sky: 'gradient', skyTop: '#5d6b9a', skyHorizon: '#d6a07a' },
+      sunset: { sun: [290, 12], sunColor: '#ffa95e', sunIntensity: 3.6, hemiSky: '#f3c9a2', hemiGround: '#3a2d20', hemiIntensity: 0.3, background: '#e0a27a', fog: '#e8b089', fogDensity: 0.0002, envIntensity: 0.2, exposure: 1.0, sky: 'gradient', skyTop: '#46639e', skyHorizon: '#f2a46c' },
       night: nightLight('#060a14'),
     },
     post: {
       day: { aoRadius: 5, aoIntensity: 3.2, aoColor: '#000000', bloom: 0.12, bloomThreshold: 0.97, saturation: 0.06, contrast: 0.14, brightness: -0.02, vignette: 0.3, toneMapping: 'aces' },
-      sunset: { aoRadius: 5, aoIntensity: 3.0, aoColor: '#000000', bloom: 0.25, bloomThreshold: 0.92, saturation: 0.04, contrast: 0.12, brightness: 0, vignette: 0.28, toneMapping: 'aces' },
+      sunset: { aoRadius: 5, aoIntensity: 3.0, aoColor: '#000000', bloom: 0.4, bloomThreshold: 0.84, saturation: 0.16, contrast: 0.18, brightness: 0, vignette: 0.3, toneMapping: 'aces' },
       night: { aoRadius: 6, aoIntensity: 2, aoColor: '#000000', bloom: 1.4, bloomThreshold: 0.55, saturation: 0, contrast: 0.06, brightness: 0, vignette: 0.4, toneMapping: 'aces' },
     },
   },

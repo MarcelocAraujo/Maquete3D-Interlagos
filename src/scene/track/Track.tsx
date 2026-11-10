@@ -9,11 +9,11 @@ import { REF } from '../../data/circuit/markers';
 import { sectorOf } from '../../data/circuit/corners';
 import type { Selection } from '../../data/types';
 import { useAppStore, type VisualMode } from '../../store/useAppStore';
-import { asphaltTextures } from '../materials/textures';
+import { asphaltTextures, gravelTexture } from '../materials/textures';
 import { styleOf } from '../modes/modeStyles';
 import { patchTrackMaterial } from '../materials/patch';
 import { getWorld } from '../world/world';
-import { buildStrip, brakingFactor, computeKerbs, computeRunoffs, envelope, hash, racingLine } from './geometry';
+import { SAUSAGE_CORNERS, buildStrip, brakingFactor, computeKerbs, computeRunoffs, envelope, hash, racingLine } from './geometry';
 import { onHoverEvent, onSelectEvent } from '../selection/events';
 
 /** Resolve o elemento da pista a partir de um ponto clicado. */
@@ -131,21 +131,35 @@ diffuseColor.rgb = mix(diffuseColor.rgb, ${far}, smoothstep(260.0, 750.0, length
   });
 }
 
-function runoffMaterial(mode: VisualMode, kind: 'paint' | 'concrete') {
+type RunoffKind = 'paint' | 'asphalt' | 'gravel';
+function runoffMaterial(mode: VisualMode, kind: RunoffKind) {
   return trackMat(`runoff-${kind}`, mode, () => {
     const st = styleOf(mode).track;
     const t = asphaltTextures();
+    const tex = st.runoffTextured;
     const m = new THREE.MeshStandardMaterial({
-      color: kind === 'paint' ? st.runoffPaint : st.runoffConcrete,
-      map: st.runoffTextured ? t.map : null,
-      roughness: 0.85,
+      color: kind === 'paint' ? st.runoffPaint : kind === 'gravel' ? st.runoffGravel : st.runoffConcrete,
+      map: kind === 'gravel' ? (tex ? gravelTexture() : null) : tex ? t.map : null,
+      normalMap: tex && kind === 'asphalt' ? t.normalMap : null,
+      roughness: kind === 'gravel' ? 1 : 0.85,
       metalness: 0,
+      flatShading: false,
       polygonOffset: true,
-      polygonOffsetFactor: -1,
-      polygonOffsetUnits: -1,
+      // a faixa pintada fica sobre o asfalto/brita da área de escape
+      polygonOffsetFactor: kind === 'paint' ? -2 : -1,
+      polygonOffsetUnits: kind === 'paint' ? -2 : -1,
     });
-    if (st.runoffTextured) m.color.multiplyScalar(kind === 'paint' ? 2.75 : 2.4);
+    // o mapa de asfalto é escuro (base ≈ 0,33): compensa a cor no modo realista
+    if (tex && kind === 'paint') m.color.multiplyScalar(2.75);
+    if (tex && kind === 'asphalt') m.color.set('#ffffff').multiplyScalar(1.12);
     return patchTrackMaterial(m, { rim: false, sector: false, key: `runoff-${kind}-${mode}` });
+  });
+}
+
+function sausageMaterial(mode: VisualMode) {
+  return trackMat('sausage', mode, () => {
+    const m = new THREE.MeshStandardMaterial({ color: styleOf(mode).track.sausage, roughness: 0.6, metalness: 0, flatShading: styleOf(mode).flat });
+    return patchTrackMaterial(m, { rim: false, sector: false, key: `sausage-${mode}` });
   });
 }
 
@@ -245,31 +259,74 @@ function useTrackGeometries() {
       for (let i = 0; i < uv.count; i++) uv.setX(i, uv.getX(i) * ((f0.wl + f0.wr) / 1.6));
     }
 
-    // áreas de escape (drapeadas no terreno)
+    // áreas de escape (drapeadas no terreno): faixa verde estreita junto à zebra e,
+    // depois dela, asfalto ou brita até a barreira (grama = o próprio terreno)
     const { height } = getWorld();
-    const runoffs = computeRunoffs().map((z) => {
-      const g = buildStrip({
-        s0: z.s0,
-        s1: z.s1,
-        step: 2,
-        cols: 6,
-        latA: (s, f) => (z.side === 1 ? f.wl + 0.3 + z.depth * envelope(s, z.s0, z.s1, 25) : -f.wr - 0.3),
-        latB: (s, f) => (z.side === 1 ? f.wl + 0.3 : -f.wr - 0.3 - z.depth * envelope(s, z.s0, z.s1, 25)),
-      });
+    const drape = (g: THREE.BufferGeometry, lift: number) => {
       const pos = g.getAttribute('position') as THREE.BufferAttribute;
       for (let i = 0; i < pos.count; i++) {
         const x = pos.getX(i);
         const zz = pos.getZ(i);
-        pos.setY(i, Math.max(pos.getY(i) - 0.05, height.sample(x, zz) + 0.04));
+        pos.setY(i, Math.max(pos.getY(i) - 0.05, height.sample(x, zz) + lift));
       }
       g.computeVertexNormals();
-      return { zone: z, geo: g };
-    });
-    const paintGeo = mergeGeometries(runoffs.filter((r) => r.zone.kind === 'paint').map((r) => r.geo));
-    const concreteGeo = mergeGeometries(runoffs.filter((r) => r.zone.kind !== 'paint').map((r) => r.geo));
+      return g;
+    };
+    const band = (z: ReturnType<typeof computeRunoffs>[number], from: (e: number) => number, to: (e: number) => number, ramp: number, lift: number, cols: number) =>
+      drape(
+        buildStrip({
+          s0: z.s0,
+          s1: z.s1,
+          step: 2,
+          cols,
+          latA: (s, f) => {
+            const e = envelope(s, z.s0, z.s1, ramp);
+            return z.side === 1 ? f.wl + to(e) : -f.wr - from(e);
+          },
+          latB: (s, f) => {
+            const e = envelope(s, z.s0, z.s1, ramp);
+            return z.side === 1 ? f.wl + from(e) : -f.wr - to(e);
+          },
+        }),
+        lift,
+      );
+    const zones = computeRunoffs();
+    const paints: THREE.BufferGeometry[] = [];
+    const asphalts: THREE.BufferGeometry[] = [];
+    const gravels: THREE.BufferGeometry[] = [];
+    for (const z of zones) {
+      paints.push(band(z, () => 0.3, (e) => 0.3 + z.paint * Math.min(1, e * 3), 8, 0.06, 2));
+      if (z.surface === 'grass') continue;
+      // superfície até ~1,5 m antes da barreira
+      const reach = (e: number) => 0.3 + z.paint + Math.max(0.01, (z.depth - z.paint - 1.5) * e);
+      (z.surface === 'gravel' ? gravels : asphalts).push(band(z, () => 0.3 + z.paint - 0.2, reach, 25, 0.04, 6));
+    }
+    const paintGeo = mergeGeometries(paints);
+    const asphaltGeo = asphalts.length ? mergeGeometries(asphalts) : null;
+    const gravelGeo = gravels.length ? mergeGeometries(gravels) : null;
+
+    // salsichas atrás das zebras internas (curvas do modelo de referência)
+    const sausages = kerbs
+      .filter((k) => k.kind === 'inside' && SAUSAGE_CORNERS.includes(k.corner))
+      .map((k) => {
+        const s0 = wrapS(k.s0 + 8);
+        const s1 = wrapS(k.s1 - 8);
+        const inner = 1.25 + 0.35;
+        return buildStrip({
+          s0,
+          s1,
+          step: 0.8,
+          cols: 2,
+          skirt: 0.25,
+          latA: (s, f) => (k.side === 1 ? f.wl + inner + 0.55 * envelope(s, s0, s1, 2) + 0.01 : -f.wr - inner),
+          latB: (s, f) => (k.side === 1 ? f.wl + inner : -f.wr - inner - 0.55 * envelope(s, s0, s1, 2) - 0.01),
+          dy: (s, u) => 0.04 + 0.1 * envelope(s, s0, s1, 2) * Math.sin(Math.PI * u),
+        });
+      });
+    const sausageGeo = sausages.length ? mergeGeometries(sausages) : null;
 
     if (import.meta.env.DEV) console.info(`[i3d] track geometry: ${(performance.now() - t0).toFixed(0)} ms`);
-    return { surface, kerbGeo, marksGeo, checker, paintGeo, concreteGeo, runoffs };
+    return { surface, kerbGeo, marksGeo, checker, paintGeo, asphaltGeo, gravelGeo, sausageGeo };
   }, []);
 }
 
@@ -297,6 +354,7 @@ export function Track() {
         <mesh geometry={g.surface} material={asphaltMaterial(mode)} receiveShadow castShadow={false} onClick={click} {...hover} />
       )}
       {layers.curbs && g.kerbGeo && <mesh geometry={g.kerbGeo} material={kerbMaterial(mode)} receiveShadow onClick={click} {...hover} />}
+      {layers.curbs && g.sausageGeo && <mesh geometry={g.sausageGeo} material={sausageMaterial(mode)} castShadow receiveShadow onClick={click} {...hover} />}
       {layers.markings && (
         <>
           <mesh geometry={g.marksGeo} material={lineMaterial(mode)} receiveShadow />
@@ -306,7 +364,8 @@ export function Track() {
       {layers.runoff && (
         <>
           <mesh geometry={g.paintGeo} material={runoffMaterial(mode, 'paint')} receiveShadow onClick={runoffClick} {...runoffHover} />
-          <mesh geometry={g.concreteGeo} material={runoffMaterial(mode, 'concrete')} receiveShadow onClick={runoffClick} {...runoffHover} />
+          {g.asphaltGeo && <mesh geometry={g.asphaltGeo} material={runoffMaterial(mode, 'asphalt')} receiveShadow onClick={runoffClick} {...runoffHover} />}
+          {g.gravelGeo && <mesh geometry={g.gravelGeo} material={runoffMaterial(mode, 'gravel')} receiveShadow onClick={runoffClick} {...runoffHover} />}
         </>
       )}
     </group>

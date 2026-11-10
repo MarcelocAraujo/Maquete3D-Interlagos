@@ -7,6 +7,7 @@ import { useAppStore, type VisualMode } from '../../store/useAppStore';
 import { patchSceneMaterial } from '../materials/patch';
 import { structMat } from '../materials/structureMaterials';
 import { getAssets, instanceProto } from '../assets/assetLibrary';
+import { pitLaneRange } from './PitComplex';
 import { onHoverEvent, onSelectEvent } from '../selection/events';
 
 /**
@@ -102,15 +103,20 @@ export function Signage() {
     }
     // balizadores na entrada do pit lane
     const bollards: THREE.Matrix4[] = [];
-    for (let k = 4; k < 20; k += 3) {
-      const i = k;
+    const pr = pitLaneRange();
+    for (let k = 2; k < 20; k += 3) {
+      const i = pr.iStart + k;
       // na área zebrada entre o pit lane e a pista (meio do caminho entre os dois eixos)
       const px = TRACK.pit.x[i];
       const pz = TRACK.pit.z[i];
       const ns = nearestS(px, pz);
       const f = frameAt(ns.s);
-      const x = (px + f.x) / 2;
-      const z = (pz + f.z) / 2;
+      // no espaço entre a borda da pista e a borda do pit lane
+      const sg = Math.sign((px - f.x) * f.lx + (pz - f.z) * f.lz) || 1;
+      const w = sg > 0 ? f.wl : f.wr;
+      const lat = w + Math.max(0.6, (ns.d - 3.5 - w) / 2);
+      const x = f.x + f.lx * sg * lat;
+      const z = f.z + f.lz * sg * lat;
       bollards.push(new THREE.Matrix4().makeTranslation(x, Math.max(TRACK.pit.y[i], f.y) + 0.02, z));
     }
     return { boards, banners, bollards };
@@ -123,14 +129,14 @@ export function Signage() {
     // placas de distância (sempre procedurais: o número importa)
     for (const d of DISTANCES) {
       const list = data.boards.filter((b) => b.n === d);
-      const panel = new THREE.PlaneGeometry(1.4, 1.05).translate(0, 2.1, 0);
+      const panel = new THREE.PlaneGeometry(2.4, 1.8).translate(0, 2.9, 0);
       const mesh = new THREE.InstancedMesh(panel, texMat(`board${d}`, () => boardTexture(d), mode), list.length);
       list.forEach((b, i) => mesh.setMatrixAt(i, b.m));
       mesh.instanceMatrix.needsUpdate = true;
       mesh.computeBoundingSphere();
       out.push(mesh);
     }
-    const posts = mergeGeometries([new THREE.BoxGeometry(0.08, 1.6, 0.08).translate(-0.5, 0.8, -0.03), new THREE.BoxGeometry(0.08, 1.6, 0.08).translate(0.5, 0.8, -0.03)]);
+    const posts = mergeGeometries([new THREE.BoxGeometry(0.1, 2.1, 0.1).translate(-0.9, 1.05, -0.04), new THREE.BoxGeometry(0.1, 2.1, 0.1).translate(0.9, 1.05, -0.04), new THREE.BoxGeometry(2.5, 1.9, 0.06).translate(0, 2.9, -0.05)]);
     const postMesh = new THREE.InstancedMesh(posts, structMat(mode, 'darkMetal'), data.boards.length);
     data.boards.forEach((b, i) => postMesh.setMatrixAt(i, b.m));
     postMesh.instanceMatrix.needsUpdate = true;

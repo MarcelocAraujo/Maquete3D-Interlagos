@@ -38,9 +38,9 @@ Distâncias das FIA Event Notes 2022 aplicadas a partir do início da via OSM nu
 | Elemento | Método | Classificação |
 |---|---|---|
 | Zebras | Internas onde |κ| > 45% do pico ao redor do ápice; externas do ápice à saída nas curvas de raio < 150 m. Perfil plano + ressalto externo de ~7 cm. Cores verde/amarelo (pintura de 2024). | estimativa |
-| Salsichas | **Não modeladas**: nenhuma evidência confiável de localização em fontes ou imagens. | não disponível |
-| Áreas de escape | Lado externo das curvas 1–13; asfalto pintado azul-turquesa (observado em satélite), área clara no Café; profundidades medidas aproximadamente na imagem. | estimativa |
-| Barreiras | Pneus + alambrado no fim das áreas de escape; muro + alambrado na reta dos boxes; guard-rail nos demais trechos; omitidas onde invadiriam outro trecho da pista. Cercas e muros do OSM. | estimativa / OSM |
+| Salsichas | Atrás das zebras internas das curvas 1, 2, 4, 8 e 10, onde aparecem no modelo de referência (RCC Design). Sem confirmação em fonte oficial. | estimativa |
+| Áreas de escape | Lado externo das curvas 1–13, no padrão do modelo de referência: faixa estreita pintada de verde escuro junto à zebra (2–3 m), depois grama, brita (Descida do Lago) ou asfalto (S do Senna, Junção, Café); profundidades aproximadas sobre imagem aérea. | estimativa |
+| Barreiras | Sempre barreira de pneus no fim das áreas de escape — com tela alta nas áreas de público e guard-rail atrás no miolo; muro de concreto na Laranjinha; muro + tela alta na reta dos boxes, Reta Oposta e trecho Mergulho–Junção; guard-rail entre a saída dos boxes e a Curva do Sol; guard-rail nos demais trechos. Cercas de perímetro do OSM omitidas (cruzavam as telas da pista); muros do OSM só longe da pista. | estimativa / OSM |
 | Boxes | Pegada OSM (295 × 52 m); 23 garagens de 216 m² (≈ 9,4 × 23 m) — dado oficial; pavimento envidraçado em balanço, cobertura, centro de operações de 6 pavimentos na extremidade norte (posição estimada). | oficial + estimativa |
 | Arquibancadas | Polígonos OSM (M, reta, chegada, A) gerados com degraus de 0,85 × 0,42 m, assentos a cada 0,52 m, escadas a cada 24 m, pilares a cada 8 m e cobertura em balanço; D e G (temporárias) posicionadas pelos portões do OSM. | OSM / estimativa |
 | Vegetação | Árvores e fileiras do OSM; distribuição em áreas de mata/arbustos/parques do OSM; arborização viária ilustrativa (apenas GAME MODE). Seis espécies procedurais com variação de escala, rotação e cor. | OSM / estimativa |

@@ -40,6 +40,7 @@ npm run data:build
 - **Estilos centralizados** em `src/scene/modes/modeStyles.ts`.
 - **Desempenho**: terreno detalhado e entorno (prédios, árvores, postes) apenas no autódromo + ~150 m; rio e represas removidos (o lago interno fica).
 - **Troca de modo suave** (crossfade), preservando câmera e seleção. **Iluminação**: dia, fim de tarde e noite (somente luz artificial existente: vias, pátios, prédios — sem iluminação de pista).
+- **Navegação**: o ponto do chão sob o cursor vira o pivô de rotação/arraste e o alvo do zoom, que avança continuamente até rente ao solo.
 - **Seleção** de curvas (15), retas, setores, boxes, cada uma das 23 garagens, torre/centro de operações, arquibancadas, prédios (13 mil), áreas de escape, barreiras, vegetação, torres, lago, kartódromo, passarela e postos de fiscais. Curvas/retas/setores se **erguem da maquete** com contorno luminoso; o restante escurece.
 - **Setores F1** pelos pontos oficiais de cronometragem (FIA Event Notes 2022), coloridos na geometria 3D.
 - **Mapa do circuito** sincronizado (seleção nos dois sentidos, posição e cone da câmera, curvas, retas, setores, largada, pit lane).
@@ -60,7 +61,9 @@ Cada dado exibido traz um selo: **oficial** (FIA, F1, Prefeitura), **secundária
 
 - **Velocidade/marcha por curva e pontos de frenagem de F1**: não disponíveis — o F1 Live Timing passou a exigir autenticação. `scripts/telemetry/extract_telemetry.py` (FastF1) funciona com uma conta F1 própria.
 - **Desnível**: o SRTM resulta em ~42 m; a Prefeitura cita ~56 m (fontes secundárias: 43–46 m). O modelo não reescala o relevo.
-- **Salsichas** (zebras altas isoladas): sem evidência confiável de localização; não modeladas. As zebras têm ressalto externo genérico.
+- **Salsichas**: posicionadas atrás das zebras internas do S do Senna, Descida do Lago, Laranjinha e Bico de Pato seguindo o modelo de referência (RCC Design) — estimativa, não levantamento.
+- **Áreas de escape e barreiras**: faixa verde estreita, grama/brita/asfalto e barreira de pneus no padrão do modelo de referência e de imagens aéreas; profundidades aproximadas.
+- **Arquibancadas complementares** (Subida dos Boxes, Café, Descida do Lago) e o pátio de apoio do miolo são ilustrativos: representam a ocupação em dia de GP, sem setor ou capacidade confirmados.
 - **Áreas de escape, barreiras e arquibancadas temporárias (D, G)**: posições aproximadas a partir de imagens aéreas e portões do OSM.
 - **Prédio dos boxes e centro de operações**: volumetria procedural sobre a pegada do OSM, com o número e a área oficiais das garagens; fachadas não são réplicas exatas.
 - **Espécies vegetais**: modelos representativos; as espécies reais não constam dos dados abertos.

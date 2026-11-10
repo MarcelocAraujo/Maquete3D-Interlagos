@@ -189,13 +189,15 @@ export function getInfo(sel: Selection): InfoView | null {
         kindLabel: 'Área de escape',
         title: z ? z.label : 'Área de escape',
         description:
-          z?.kind === 'concrete'
-            ? 'Área de escape clara (concreto/asfalto sem pintura), identificada em imagem de satélite na região do Café.'
-            : 'Área de escape asfaltada com pintura azul-turquesa, padrão observado em imagens de satélite na maioria das curvas de Interlagos. O asfalto pintado permite frenagem e retorno à pista, ao contrário da brita.',
+          'Faixa estreita pintada logo após a zebra, seguida de ' +
+          (z?.surface === 'gravel' ? 'caixa de brita' : z?.surface === 'asphalt' ? 'área asfaltada' : 'grama') +
+          (z?.barrier === 'wall' ? ' e muro de concreto.' : z?.barrier === 'tyreRail' ? ' e barreira de pneus com guard-rail atrás.' : ' e barreira de pneus com tela de proteção alta.') +
+          ' A disposição segue o modelo de referência estilizado (RCC Design) e imagens aéreas; é uma representação aproximada, não um levantamento.',
         facts: [
-          f('Superfície', z?.kind === 'concrete' ? 'Concreto/asfalto claro' : 'Asfalto pintado (azul-turquesa)', 'secundaria', ['esri']),
-          f('Profundidade no modelo', z ? `≈ ${z.depth} m` : 'Não disponível', 'estimativa', ['esri'], 'Medida aproximada sobre imagem aérea.'),
-          f('Brita (gravel)', 'Não observada nas imagens consultadas', 'estimativa', ['esri']),
+          f('Superfície', z?.surface === 'gravel' ? 'Brita' : z?.surface === 'asphalt' ? 'Asfalto' : 'Grama', 'estimativa', ['esri']),
+          f('Faixa pintada junto à zebra', z ? `≈ ${z.paint} m` : 'Não disponível', 'estimativa', ['esri']),
+          f('Distância até a barreira no modelo', z ? `≈ ${z.depth} m` : 'Não disponível', 'estimativa', ['esri'], 'Medida aproximada sobre imagem aérea e modelo de referência.'),
+          f('Barreira', z?.barrier === 'wall' ? 'Muro de concreto' : z?.barrier === 'tyreRail' ? 'Pneus + guard-rail' : 'Pneus + tela alta', 'estimativa'),
         ],
         sources: ['esri'],
       };

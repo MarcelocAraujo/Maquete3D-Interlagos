@@ -259,6 +259,53 @@ export const GRANDSTANDS: GrandstandInfo[] = [
     ],
     sources: ['band-setores', 'osm'],
   },
+  {
+    id: 'gs-subida',
+    name: 'Arquibancadas da Subida dos Boxes',
+    place: { s0: 3988, s1: 4268, side: 'R', offset: 7, depth: 16 },
+    covered: true,
+    temporary: false,
+    seatColor: '#1f5fa8',
+    idReliability: 'estimativa',
+    description:
+      'Arquibancadas no lado externo da reta dos boxes, entre o Setor A e a arquibancada da chegada. Em dia de GP o lado de fora da reta é tomado por arquibancadas; aqui o trecho livre do mapa foi preenchido para representar isso. Setor, capacidade e forma exata não confirmados.',
+    facts: [
+      f('Localização', 'Lado externo da Subida dos Boxes / reta principal', 'estimativa'),
+      f('Posição no modelo', 'Trecho sem edificações no OSM entre o Setor A e a arquibancada da chegada', 'estimativa', ['osm']),
+      f('Setor e capacidade', 'Não disponível', 'indisponivel'),
+    ],
+    sources: ['osm'],
+  },
+  {
+    id: 'gs-lago',
+    name: 'Arquibancada da Descida do Lago',
+    place: { s0: 1400, s1: 1470, side: 'R', offset: 36, depth: 13 },
+    covered: true,
+    temporary: true,
+    seatColor: '#2e8b57',
+    idReliability: 'estimativa',
+    description: 'Arquibancada atrás da caixa de brita da Descida do Lago (fim da Reta Oposta), posicionada seguindo o modelo de referência. Representação aproximada de área de público; setor e capacidade não confirmados.',
+    facts: [
+      f('Localização', 'Fim da Reta Oposta, atrás da área de escape da Curva 4', 'estimativa'),
+      f('Setor e capacidade', 'Não disponível', 'indisponivel'),
+    ],
+    sources: ['osm'],
+  },
+  {
+    id: 'gs-cafe',
+    name: 'Arquibancada do Café',
+    place: { s0: 3652, s1: 3724, side: 'R', offset: 6, depth: 14 },
+    covered: false,
+    temporary: true,
+    seatColor: '#2e8b57',
+    idReliability: 'estimativa',
+    description: 'Arquibancada na saída da Curva do Café, no início da Subida dos Boxes. Representação aproximada de área de público; setor e capacidade não confirmados.',
+    facts: [
+      f('Localização', 'Saída do Café', 'estimativa'),
+      f('Setor e capacidade', 'Não disponível', 'indisponivel'),
+    ],
+    sources: ['osm'],
+  },
 ];
 
 export const MARSHAL_POST_INFO: FacilityInfo = {

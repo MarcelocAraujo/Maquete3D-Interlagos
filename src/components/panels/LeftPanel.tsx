@@ -122,9 +122,9 @@ export function LeftPanel() {
           icon={<Flag size={14} />}
           right={
             <span onClick={(e) => e.stopPropagation()} className="mr-1">
-              <button type="button" onClick={() => setShowSectors(!showSectors)} className={cx('rounded px-1.5 py-0.5 text-[9.5px] font-semibold tracking-wider', showSectors ? 'bg-white text-ink-950' : 'bg-white/5 text-ink-300')}>
+              <span role="button" tabIndex={0} onClick={() => setShowSectors(!showSectors)} className={cx('cursor-pointer rounded px-1.5 py-0.5 text-[9.5px] font-semibold tracking-wider', showSectors ? 'bg-white text-ink-950' : 'bg-white/5 text-ink-300')}>
                 {showSectors ? 'CORES ON' : 'CORES OFF'}
-              </button>
+              </span>
             </span>
           }
         >
@@ -223,7 +223,7 @@ export function LeftPanel() {
           ))}
         </Section>
 
-        <Section title="Camadas da maquete" icon={<Layers size={14} />} defaultOpen={false} right={<span onClick={(e) => e.stopPropagation()} className="mr-1 flex gap-1"><button type="button" className="text-[9.5px] text-ink-400 hover:text-white" onClick={() => setAllLayers(true)}>todas</button></span>}>
+        <Section title="Camadas da maquete" icon={<Layers size={14} />} defaultOpen={false} right={<span onClick={(e) => e.stopPropagation()} className="mr-1 flex gap-1"><span role="button" tabIndex={0} className="cursor-pointer text-[9.5px] text-ink-400 hover:text-white" onClick={() => setAllLayers(true)}>todas</span></span>}>
           <div className="grid grid-cols-1">
             {LAYER_KEYS.map((k) => (
               <Toggle key={k} checked={layers[k]} onChange={() => toggleLayer(k)} label={LAYER_LABELS[k]} />

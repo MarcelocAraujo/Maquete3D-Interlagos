@@ -5,15 +5,15 @@ import { getWorld, minAreaRect, pointInPoly, polyArea, polyCentroid, rng, type B
 import { useAppStore, type VisualMode } from '../../store/useAppStore';
 import { addGableRoof, extrudeFootprint, newExtrudeOut, singleBuildingGeometry, toGeometry } from './extrude';
 import { styleOf } from '../modes/modeStyles';
-import { facadeTextures, concreteTexture } from '../materials/textures';
+import { facadeTextures, ribbonFacadeTextures } from '../materials/textures';
 import { patchSceneMaterial, sceneUniforms } from '../materials/patch';
-import { insideArea } from '../terrain/plinth';
+import { LANDMARK_BUILDINGS, insideArea } from '../terrain/plinth';
 import { registerSelectable } from '../selection/bounds';
 import { onHoverEvent, onSelectEvent } from '../selection/events';
 import type { Selection } from '../../data/types';
 
 /** Prédios tratados por componentes próprios (boxes) */
-export const SPECIAL_BUILDINGS = new Set<number | string>([33779114, 1563340820]);
+export const SPECIAL_BUILDINGS = new Set<number | string>([33779114, 1563340820, 138433083]);
 
 export function buildingTop(b: BuildingFeature) {
   return b.b + b.g * 0.5 + b.h;
@@ -40,6 +40,7 @@ function buildBatch(items: BuildingFeature[], mode: VisualMode, complex: boolean
     roofTriStarts.push(out.roofIdx.length / 3);
     const pick = (arr: string[]) => arr[Math.floor(r() * arr.length)];
     wc.set(complex ? st.complexWall : pick(st.walls));
+    if (LANDMARK_BUILDINGS.has(b.id)) wc.set(mode === 'sim' ? '#efe6d6' : '#f6efe2'); // torres da Junção: fachada clara
     const area = Math.abs(polyArea(b.poly));
     const tile = !complex && b.h < 9 && area < 450 && r() < st.tileShare;
     rc.set(tile ? pick(st.roofsTile) : complex ? st.complexRoof : pick(st.roofsFlat));
@@ -81,9 +82,11 @@ function buildingMaterials(mode: VisualMode, complex: boolean): THREE.Material[]
   let mats: THREE.Material[];
   if (styleOf(mode).buildings.facade) {
     const f = facadeTextures();
-    const wall = new THREE.MeshStandardMaterial({ vertexColors: true, map: complex ? concreteTexture() : f.map, emissiveMap: complex ? null : f.emissiveMap, emissive: new THREE.Color('#ffd9a0'), emissiveIntensity: 0, roughness: 0.85, metalness: 0 });
+    // complexo: janelas em faixa (edifícios comerciais/apoio); entorno: janelas residenciais
+    const rf = ribbonFacadeTextures();
+    const wall = new THREE.MeshStandardMaterial({ vertexColors: true, map: complex ? rf.map : f.map, emissiveMap: complex ? rf.emissiveMap : f.emissiveMap, emissive: new THREE.Color('#ffd9a0'), emissiveIntensity: 0, roughness: 0.8, metalness: 0 });
     const roof = new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.8, metalness: 0.05 });
-    // janelas acesas à noite (apenas fachadas do entorno)
+    // janelas acesas à noite
     const prev = wall.onBeforeCompile;
     wall.onBeforeCompile = (shader, r) => {
       prev?.call(wall, shader, r);
@@ -130,7 +133,7 @@ export function Buildings() {
       if (SPECIAL_BUILDINGS.has(b.id)) continue;
       if (/^\d+$/.test(b.n ?? '')) continue; // postos de fiscalização numerados (componente próprio)
       const c = polyCentroid(b.poly);
-      if (!insideArea(c[0], c[1])) continue;
+      if (!insideArea(c[0], c[1]) && !LANDMARK_BUILDINGS.has(b.id)) continue;
       if (pointInPoly(c[0], c[1], features.complex)) complexItems.push(b);
       else cityItems.push(b);
     }

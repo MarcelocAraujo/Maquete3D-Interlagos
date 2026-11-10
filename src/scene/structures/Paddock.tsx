@@ -1,7 +1,7 @@
 import { useMemo } from 'react';
 import * as THREE from 'three';
 import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js';
-import { getWorld, pointInPoly, polyBounds, rng, type XZ } from '../world/world';
+import { getWorld, minAreaRect, pointInPoly, polyArea, polyBounds, polyCentroid, rng, type XZ } from '../world/world';
 import { TRACK, nearestS } from '../../data/circuit/track';
 import { useAppStore, type VisualMode } from '../../store/useAppStore';
 import { patchSceneMaterial } from '../materials/patch';
@@ -21,7 +21,8 @@ import type { Selection } from '../../data/types';
  */
 const SEL: Selection = { kind: 'structure', id: 'paddock-veiculos' };
 
-type Kind = 'truck' | 'motorhome' | 'van' | 'car' | 'tent' | 'container';
+type Kind = 'truck' | 'motorhome' | 'van' | 'car' | 'tent' | 'container' | 'shrub';
+const SHRUB_COLORS = ['#4f8f3a', '#5d9c3f', '#467f33', '#6aa847'];
 interface Item {
   kind: Kind;
   x: number;
@@ -101,6 +102,19 @@ function vehicleGeometry(kind: Kind): THREE.BufferGeometry {
     }
     case 'container':
       return mergeGeometries([cbox(6.06, 2.59, 2.44, 0, 0, 0, W), cbox(6.1, 0.12, 2.5, 0, 2.59, 0, DARK)]);
+    case 'shrub': {
+      // touceira de arbustos (três volumes facetados), tingida pela cor da instância
+      const blob = (r: number, x: number, z: number, y: number) => {
+        const g = new THREE.IcosahedronGeometry(r, 0).toNonIndexed();
+        g.scale(1, 0.75, 1);
+        g.translate(x, y, z);
+        g.deleteAttribute('uv');
+        const n = g.getAttribute('position').count;
+        g.setAttribute('color', new THREE.BufferAttribute(new Float32Array(n * 3).fill(1), 3));
+        return g;
+      };
+      return mergeGeometries([blob(1.2, 0, 0, 0.8), blob(0.9, 1.1, 0.4, 0.6), blob(0.8, -0.9, -0.5, 0.55)]);
+    }
   }
 }
 
@@ -158,6 +172,65 @@ function layout(): Item[] {
     const [x, z] = at(t, fr.W / 2 + 10 + (i % 7) * 4.5);
     if (!blocked(x, z)) items.push({ kind: i % 2 ? 'container' : 'van', x, z, rot: rotAlong, color: new THREE.Color(i % 2 ? '#8a9198' : '#e9eaec') });
   }
+  // Pátios asfaltados do miolo (OSM area=paved, os dois maiores): em fim de semana de
+  // corrida viram área de apoio — fileiras de motorhomes, caminhões, vans e tendas com
+  // corredores, no padrão do modelo de referência. Disposição ilustrativa.
+  const lots = features.landuse
+    .filter((l) => l.k === 'paved' && Math.abs(polyArea(l.poly)) > 20000 && pointInPoly(...polyCentroid(l.poly), features.complex))
+    .sort((a, b) => Math.abs(polyArea(b.poly)) - Math.abs(polyArea(a.poly)))
+    .slice(0, 2);
+  const inLot = (x: number, z: number, poly: XZ[], inset: number) =>
+    pointInPoly(x, z, poly) && pointInPoly(x + inset, z, poly) && pointInPoly(x - inset, z, poly) && pointInPoly(x, z + inset, poly) && pointInPoly(x, z - inset, poly);
+  for (const lot of lots) {
+    const rect = minAreaRect(lot.poly);
+    const ca = Math.cos(rect.angle);
+    const sa = Math.sin(rect.angle);
+    const toXZ = (u: number, v: number): XZ => [rect.center[0] + u * ca - v * sa, rect.center[1] + u * sa + v * ca];
+    const rot = -rect.angle; // eixo X local (comprimento do veículo) ao longo de u
+    // blocos: fileira dupla de veículos (frente a frente) + corredor de 12 m
+    const blockW = 42;
+    let row = 0;
+    for (let v = -rect.width / 2 + 10; v < rect.width / 2 - 8; v += blockW, row++) {
+      const kindA: Kind = row % 3 === 2 ? 'tent' : 'motorhome';
+      const kindB: Kind = row % 2 ? 'truck' : 'motorhome';
+      for (const [dv, kind] of [[0, kindA], [9, kindB]] as [number, Kind][]) {
+        const pitch = kind === 'tent' ? 7.5 : kind === 'truck' ? 3.8 : 4.4;
+        // veículos perpendiculares ao corredor
+        for (let u = -rect.length / 2 + 8; u < rect.length / 2 - 8; u += pitch) {
+          const [x, z] = toXZ(u, v + dv);
+          if (!inLot(x, z, lot.poly, kind === 'truck' ? 9 : 7) || blocked(x, z, 3) || r() < 0.32) continue;
+          const team = Math.floor((u + rect.length) / 26 + row * 3) % TEAM_COLORS.length;
+          // cores como no modelo de referência: maioria branca, parte amarela, poucas cores de equipe
+          const pc = r();
+          const col = kind === 'tent' ? '#f4f4f2' : pc < 0.55 ? '#f1f1ef' : pc < 0.75 ? '#f2c400' : TEAM_COLORS[team];
+          items.push({ kind, x, z, rot: kind === 'tent' ? rot : rot + Math.PI / 2, color: new THREE.Color(col) });
+        }
+      }
+      // vans de apoio no corredor, de vez em quando
+      for (let u = -rect.length / 2 + 14; u < rect.length / 2 - 14; u += 23) {
+        const [x, z] = toXZ(u, v + 22);
+        if (r() < 0.45 && inLot(x, z, lot.poly, 5) && !blocked(x, z, 2)) items.push({ kind: 'van', x, z, rot, color: new THREE.Color(r() < 0.5 ? '#e9eaec' : '#c7c9cc') });
+      }
+    }
+    // arbustos e canteiros nas bordas do pátio (quebram o asfalto vazio)
+    const poly = lot.poly;
+    for (let i = 0; i < poly.length; i++) {
+      const a = poly[i];
+      const b = poly[(i + 1) % poly.length];
+      const len = Math.hypot(b[0] - a[0], b[1] - a[1]);
+      for (let t = 4; t < len - 4; t += 6 + r() * 5) {
+        const k = t / len;
+        // um pouco para dentro do pátio
+        const cx = rect.center[0] - (a[0] + (b[0] - a[0]) * k);
+        const cz = rect.center[1] - (a[1] + (b[1] - a[1]) * k);
+        const cl = Math.hypot(cx, cz) || 1;
+        const x = a[0] + (b[0] - a[0]) * k + (cx / cl) * 2.5;
+        const z = a[1] + (b[1] - a[1]) * k + (cz / cl) * 2.5;
+        if (!pointInPoly(x, z, poly) || blocked(x, z, 1)) continue;
+        items.push({ kind: 'shrub', x, z, rot: r() * Math.PI * 2, color: new THREE.Color(SHRUB_COLORS[Math.floor(r() * SHRUB_COLORS.length)]).multiplyScalar(0.85 + r() * 0.3) });
+      }
+    }
+  }
   // estacionamentos do OSM: vagas de 2,6 x 5,5 m, ocupação ~65%
   let cars = 0;
   for (const l of features.landuse) {
@@ -177,6 +250,12 @@ const matCache = new Map<string, THREE.Material>();
 function vehicleMaterial(mode: VisualMode) {
   if (!matCache.has(mode)) matCache.set(mode, patchSceneMaterial(new THREE.MeshStandardMaterial({ vertexColors: true, roughness: mode === 'sim' ? 0.45 : 0.7, metalness: mode === 'sim' ? 0.35 : 0, flatShading: styleOf(mode).flat }), 'vehicle'));
   return matCache.get(mode)!;
+}
+
+function shrubMaterial(mode: VisualMode) {
+  const k = 'shrub-' + mode;
+  if (!matCache.has(k)) matCache.set(k, patchSceneMaterial(new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.9, metalness: 0, flatShading: true }), 'shrub'));
+  return matCache.get(k)!;
 }
 
 export function Paddock() {
@@ -214,13 +293,13 @@ export function Paddock() {
         for (const [pi, mats] of byP) out.push(...instanceProto(protos[pi], mats, mode, { shadows: quality !== 'low' }));
         continue;
       }
-      const mesh = new THREE.InstancedMesh(vehicleGeometry(kind), vehicleMaterial(mode), list.length);
+      const mesh = new THREE.InstancedMesh(vehicleGeometry(kind), kind === 'shrub' ? shrubMaterial(mode) : vehicleMaterial(mode), list.length);
       list.forEach((it, i) => {
         q.setFromAxisAngle(new THREE.Vector3(0, 1, 0), it.rot);
         m.compose(new THREE.Vector3(it.x, height.sample(it.x, it.z) - 0.05, it.z), q, new THREE.Vector3(1, 1, 1));
         mesh.setMatrixAt(i, m);
         mesh.setColorAt(i, it.color);
-        if (kind !== 'car') box.expandByPoint(new THREE.Vector3(it.x, height.sample(it.x, it.z) + 4, it.z));
+        if (kind !== 'car' && kind !== 'shrub') box.expandByPoint(new THREE.Vector3(it.x, height.sample(it.x, it.z) + 4, it.z));
       });
       mesh.instanceMatrix.needsUpdate = true;
       if (mesh.instanceColor) mesh.instanceColor.needsUpdate = true;

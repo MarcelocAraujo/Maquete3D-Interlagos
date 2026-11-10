@@ -63,7 +63,8 @@ export function structMat(mode: VisualMode, key: StructMat): THREE.Material {
     case 'fence': {
       const t = fenceTexture().clone();
       t.needsUpdate = true;
-      m = new THREE.MeshStandardMaterial({ ...base, map: t, alphaTest: 0.35, side: THREE.DoubleSide, transparent: false });
+      t.repeat.set(1, 1);
+      m = new THREE.MeshStandardMaterial({ ...base, flatShading: false, map: t, alphaTest: 0.05, side: THREE.DoubleSide, transparent: true, depthWrite: false });
       break;
     }
     case 'pitAsphalt': {

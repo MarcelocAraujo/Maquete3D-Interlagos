@@ -155,19 +155,44 @@ export const concreteTexture = () =>
 /** Tela de alambrado (alpha) para cercas de proteção. */
 export const fenceTexture = () =>
   memo('fence', () => {
-    const S = 64;
+    // Tela de alambrado: malha losangular densa sobre um fundo translúcido, com
+    // tubo superior, inferior e intermediário. O fundo translúcido mantém a tela
+    // visível à distância (antes só os postes apareciam — efeito "cerca de pasto").
+    const S = 128;
     const data = new Uint8Array(S * S * 4);
     for (let y = 0; y < S; y++)
       for (let x = 0; x < S; x++) {
-        const d1 = Math.abs(((x + y) % 16) - 8);
-        const d2 = Math.abs(((x - y + 64) % 16) - 8);
-        const wire = Math.max(0, 1 - Math.min(d1, d2) / 1.1);
-        const post = x < 3 ? 1 : 0;
-        const a = Math.max(wire * 0.9, post);
+        const d1 = Math.abs(((x + y) % 8) - 4);
+        const d2 = Math.abs(((x - y + 128) % 8) - 4);
+        const wire = Math.max(0, 1 - Math.min(d1, d2) / 0.9);
+        const rail = y < 4 || y > S - 5 || Math.abs(y - S * 0.42) < 1.5 ? 1 : 0;
+        const post = x < 4 ? 1 : 0;
+        const a = Math.max(0.34 + wire * 0.5, rail, post);
         const i = (y * S + x) * 4;
-        data[i] = data[i + 1] = data[i + 2] = 200;
-        data[i + 3] = a * 255;
+        const c = rail || post ? 175 : 205;
+        data[i] = data[i + 1] = data[i + 2] = c;
+        data[i + 3] = Math.min(1, a) * 255;
       }
+    return makeTexture(data, S, true);
+  });
+
+/** Brita (caixa de cascalho): grãos claros e escuros sobre base bege-acinzentada. */
+export const gravelTexture = () =>
+  memo('gravel', () => {
+    const S = 256;
+    const n = tileNoise(S, 16, 3, 83);
+    const r = rng(89);
+    const data = new Uint8Array(S * S * 4);
+    for (let i = 0; i < S * S; i++) {
+      const g = r();
+      const grain = g < 0.18 ? -0.22 : g > 0.86 ? 0.16 : (g - 0.5) * 0.1;
+      const v = 0.8 + (n[i] - 0.5) * 0.22 + grain;
+      const c = Math.max(0, Math.min(1, v)) * 255;
+      data[i * 4] = c;
+      data[i * 4 + 1] = c * 0.97;
+      data[i * 4 + 2] = c * 0.92;
+      data[i * 4 + 3] = 255;
+    }
     return makeTexture(data, S, true);
   });
 
@@ -275,4 +300,42 @@ export const hexTexture = () =>
     t.colorSpace = THREE.SRGBColorSpace;
     t.anisotropy = 8;
     return t;
+  });
+
+/**
+ * Fachada comercial com janelas em faixa (edifícios do complexo): por repetição
+ * (26 x 24 m), 6 pavimentos de 4 m com peitoril claro e faixa de vidro escuro,
+ * montantes a cada ~1,6 m. Mapa emissivo com parte das faixas acesas à noite.
+ */
+export const ribbonFacadeTextures = () =>
+  memo('ribbon', () => {
+    const S = 256;
+    const r = rng(97);
+    const color = new Uint8Array(S * S * 4);
+    const emiss = new Uint8Array(S * S * 4);
+    const floors = 6;
+    const cols = 16;
+    const lit: number[] = [];
+    for (let k = 0; k < floors * cols; k++) lit.push(r() < 0.4 ? 0.5 + r() * 0.5 : 0);
+    for (let y = 0; y < S; y++)
+      for (let x = 0; x < S; x++) {
+        const fy = ((y / S) * floors) % 1;
+        const fx = ((x / S) * cols) % 1;
+        const cy = Math.floor((y / S) * floors);
+        const cx = Math.floor((x / S) * cols);
+        const glass = fy > 0.28 && fy < 0.86;
+        const mullion = glass && (fx < 0.06 || fx > 0.94);
+        const i = (y * S + x) * 4;
+        const v = mullion ? 0.55 : glass ? 0.3 : 0.93;
+        color[i] = v * 255;
+        color[i + 1] = (glass && !mullion ? 0.35 : v) * 255;
+        color[i + 2] = (glass && !mullion ? 0.42 : v * 0.97) * 255;
+        color[i + 3] = 255;
+        const e = glass && !mullion ? lit[cy * cols + cx] : 0;
+        emiss[i] = e * 255;
+        emiss[i + 1] = e * 0.85 * 255;
+        emiss[i + 2] = e * 0.62 * 255;
+        emiss[i + 3] = 255;
+      }
+    return { map: makeTexture(color, S, true), emissiveMap: makeTexture(emiss, S, true) };
   });

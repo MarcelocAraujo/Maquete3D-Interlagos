@@ -38,7 +38,7 @@ export function CameraRig() {
   const ref = useRef<CameraControlsImpl>(null);
   const request = useAppStore((s) => s.cameraRequest);
   const explore = useAppStore((s) => s.explore);
-  const { camera } = useThree();
+  const { camera, gl } = useThree();
   const keys = useRef<Record<string, boolean>>({});
   const lastPush = useRef(0);
 
@@ -54,15 +54,21 @@ export function CameraRig() {
   useEffect(() => {
     const c = ref.current;
     if (!c) return;
-    c.colliderMeshes = [collider];
-    c.minDistance = 6;
+    // Sem colliderMeshes: o colisor do camera-controls "puxa" a câmera para o alvo
+    // sempre que um morro fica no caminho, o que travava a navegação. A câmera é
+    // mantida acima do terreno no useFrame.
+    c.minDistance = 4;
     c.maxDistance = 4200;
     c.maxPolarAngle = 86 * DEG;
     c.dollyToCursor = true;
-    c.smoothTime = 0.55;
-    c.draggingSmoothTime = 0.12;
-    c.dollySpeed = 0.6;
-    c.truckSpeed = 1.6;
+    // zoom contínuo: ao chegar perto do alvo, o zoom continua avançando em direção ao cursor
+    c.infinityDolly = true;
+    c.smoothTime = 0.3;
+    c.draggingSmoothTime = 0.06;
+    c.dollySpeed = 0.9;
+    c.truckSpeed = 2;
+    c.azimuthRotateSpeed = 0.9;
+    c.polarRotateSpeed = 0.9;
     c.setBoundary(new THREE.Box3(new THREE.Vector3(PLINTH.x0 - 900, -50, PLINTH.z0 - 900), new THREE.Vector3(PLINTH.x1 + 900, 600, PLINTH.z1 + 900)));
     c.mouseButtons.right = CameraControlsImpl.ACTION.TRUCK;
     c.mouseButtons.middle = CameraControlsImpl.ACTION.DOLLY;
@@ -72,6 +78,45 @@ export function CameraRig() {
     c.setLookAt(pos.x * 1.6, pos.y * 1.9, pos.z * 1.6, target.x, target.y, target.z, false);
     c.setLookAt(pos.x, pos.y, pos.z, target.x, target.y, target.z, true);
   }, [collider]);
+
+  // Pivô sob o cursor: ao apertar o botão, o ponto do terreno sob o mouse vira o
+  // centro de rotação/arraste. Assim girar e arrastar "pegam" o chão onde se clicou,
+  // com a mesma resposta em qualquer nível de zoom (antes o alvo ficava longe e
+  // o arraste quase não movia a câmera quando ela estava próxima do chão).
+  useEffect(() => {
+    const el = gl.domElement;
+    const ray = new THREE.Raycaster();
+    const ndc = new THREE.Vector2();
+    const pivotAt = (clientX: number, clientY: number) => {
+      const c = ref.current;
+      if (!c) return;
+      const r = el.getBoundingClientRect();
+      ndc.set(((clientX - r.left) / r.width) * 2 - 1, -((clientY - r.top) / r.height) * 2 + 1);
+      ray.setFromCamera(ndc, camera);
+      const hit = ray.intersectObject(collider, false)[0];
+      if (!hit || hit.distance > 3500) return;
+      c.stop();
+      c.setOrbitPoint(hit.point.x, hit.point.y, hit.point.z);
+    };
+    const onDown = (e: PointerEvent) => {
+      if (e.button === 0 || e.button === 2) pivotAt(e.clientX, e.clientY);
+    };
+    // zoom: no início de cada gesto da roda, o alvo passa a ser o chão sob o cursor
+    // (o "dolly to cursor" nativo mira um plano que pode ficar abaixo do relevo, e a
+    // câmera encostava no chão e parava de avançar)
+    let lastWheel = 0;
+    const onWheel = (e: WheelEvent) => {
+      const now = performance.now();
+      if (now - lastWheel > 350) pivotAt(e.clientX, e.clientY);
+      lastWheel = now;
+    };
+    el.addEventListener('pointerdown', onDown, { capture: true });
+    el.addEventListener('wheel', onWheel, { capture: true, passive: true });
+    return () => {
+      el.removeEventListener('pointerdown', onDown, { capture: true });
+      el.removeEventListener('wheel', onWheel, { capture: true });
+    };
+  }, [gl, camera, collider]);
 
   // pedidos de câmera (presets e foco em seleção)
   useEffect(() => {
@@ -142,6 +187,10 @@ export function CameraRig() {
     // impede a câmera de atravessar o terreno
     const { height } = getWorld();
     const ground = height.sample(camera.position.x, camera.position.z);
+    // o alvo também não pode afundar no terreno (o zoom contínuo o empurra para a frente)
+    const tg = c.getTarget(new THREE.Vector3());
+    const tGround = height.sample(tg.x, tg.z);
+    if (tg.y < tGround - 0.5) c.setTarget(tg.x, tGround, tg.z, false);
     if (camera.position.y < ground + 2.5) {
       const t = c.getTarget(new THREE.Vector3());
       c.setPosition(camera.position.x, ground + 2.5, camera.position.z, false);

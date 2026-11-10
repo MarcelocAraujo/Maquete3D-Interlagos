@@ -25,3 +25,9 @@ export const insidePlinth = (x: number, z: number, margin = 0) =>
   x > PLINTH.x0 + margin && x < PLINTH.x1 - margin && z > PLINTH.z0 + margin && z < PLINTH.z1 - margin;
 
 export const TRACK_CENTER: [number, number] = [(PLINTH.x0 + PLINTH.x1) / 2, (PLINTH.z0 + PLINTH.z1) / 2];
+
+/**
+ * Prédios-referência fora do recorte: as duas torres residenciais (~56 m, OSM) vistas
+ * da subida da Junção/Café, marca visual conhecida de Interlagos.
+ */
+export const LANDMARK_BUILDINGS = new Set<number | string>([619083686, 619083865]);

@@ -206,36 +206,48 @@ export function computeKerbs(): KerbRun[] {
   return runs;
 }
 
+export type RunoffSurface = 'grass' | 'asphalt' | 'gravel';
+/** Barreira no fim da área de escape: pneus com tela alta, pneus com guard-rail atrás, ou muro de concreto. */
+export type RunoffBarrier = 'tyreFence' | 'tyreRail' | 'wall';
+
 export interface RunoffZone {
   s0: number;
   s1: number;
   side: 1 | -1;
+  /** distância da borda da pista até a barreira (m) */
   depth: number;
-  kind: 'paint' | 'asphalt' | 'concrete';
+  /** largura da faixa pintada (verde escuro) junto à zebra (m) */
+  paint: number;
+  /** superfície entre a faixa pintada e a barreira (grama = terreno, sem malha própria) */
+  surface: RunoffSurface;
+  barrier: RunoffBarrier;
   corner?: number;
   label: string;
 }
 
 /**
- * Áreas de escape externas às curvas. Tipo e profundidade aproximados a partir
- * de imagens de satélite (asfalto pintado em azul-turquesa na maioria das curvas;
- * área clara de concreto/asfalto no Café). Valores de profundidade = estimativa.
+ * Áreas de escape externas às curvas, no padrão do modelo de referência (RCC Design)
+ * e das imagens aéreas: faixa estreita pintada de verde escuro logo após a zebra,
+ * depois grama, brita (Descida do Lago) ou asfalto (S do Senna, Junção, Café), e
+ * sempre uma barreira de pneus no fim — com tela alta nas áreas de público ou
+ * guard-rail atrás no miolo. Na Laranjinha, muro de concreto. Profundidades = estimativa.
  */
 export function computeRunoffs(): RunoffZone[] {
-  const spec: Record<number, { depth: number; kind: RunoffZone['kind']; pre?: number; post?: number }> = {
-    1: { depth: 34, kind: 'paint', pre: 40, post: 10 },
-    2: { depth: 16, kind: 'paint', pre: 5, post: 20 },
-    3: { depth: 14, kind: 'paint', pre: 0, post: 30 },
-    4: { depth: 32, kind: 'paint', pre: 30, post: 10 },
-    5: { depth: 18, kind: 'paint', pre: 0, post: 30 },
-    6: { depth: 18, kind: 'paint', pre: 10, post: 10 },
-    7: { depth: 14, kind: 'paint', pre: 0, post: 15 },
-    8: { depth: 14, kind: 'paint', pre: 5, post: 15 },
-    9: { depth: 12, kind: 'paint', pre: 10, post: 10 },
-    10: { depth: 16, kind: 'paint', pre: 20, post: 10 },
-    11: { depth: 16, kind: 'paint', pre: 0, post: 20 },
-    12: { depth: 30, kind: 'paint', pre: 50, post: 20 },
-    13: { depth: 20, kind: 'concrete', pre: 10, post: 60 },
+  type Spec = { depth: number; paint?: number; surface: RunoffSurface; barrier: RunoffBarrier; pre?: number; post?: number };
+  const spec: Record<number, Spec> = {
+    1: { depth: 20, surface: 'asphalt', barrier: 'tyreFence', pre: 35, post: 8 },
+    2: { depth: 9, surface: 'grass', barrier: 'tyreFence', pre: 5, post: 15 },
+    3: { depth: 11, surface: 'grass', barrier: 'tyreFence', pre: 0, post: 25 },
+    4: { depth: 30, surface: 'gravel', barrier: 'tyreFence', pre: 30, post: 10 },
+    5: { depth: 11, surface: 'grass', barrier: 'tyreRail', pre: 0, post: 25 },
+    6: { depth: 14, surface: 'grass', barrier: 'tyreRail', pre: 10, post: 10 },
+    7: { depth: 10, surface: 'grass', barrier: 'tyreRail', pre: 0, post: 15 },
+    8: { depth: 6, paint: 2, surface: 'grass', barrier: 'wall', pre: 10, post: 25 },
+    9: { depth: 10, surface: 'grass', barrier: 'tyreRail', pre: 10, post: 10 },
+    10: { depth: 10, surface: 'grass', barrier: 'tyreRail', pre: 15, post: 10 },
+    11: { depth: 9, surface: 'grass', barrier: 'tyreFence', pre: 0, post: 15 },
+    12: { depth: 18, surface: 'asphalt', barrier: 'tyreFence', pre: 40, post: 15 },
+    13: { depth: 13, surface: 'asphalt', barrier: 'tyreFence', pre: 10, post: 50 },
   };
   const zones: RunoffZone[] = [];
   for (const c of CORNERS) {
@@ -247,13 +259,22 @@ export function computeRunoffs(): RunoffZone[] {
       s1: wrapS(c.s1 + (sp.post ?? 0)),
       side: sign,
       depth: sp.depth,
-      kind: sp.kind,
+      paint: Math.min(sp.paint ?? 3, sp.depth - 1),
+      surface: sp.surface,
+      barrier: sp.barrier,
       corner: c.number,
       label: `Área de escape – Curva ${c.number} (${c.name})`,
     });
   }
   return zones;
 }
+
+/**
+ * "Salsichas": elementos amarelos elevados atrás das zebras internas, nas curvas
+ * em que aparecem no modelo de referência (S do Senna, Descida do Lago, Laranjinha,
+ * Bico de Pato). Posição = estimativa.
+ */
+export const SAUSAGE_CORNERS = [1, 2, 4, 8, 10];
 
 /** Envelope suave 0..1..0 dentro de [s0,s1]. */
 export function envelope(s: number, s0: number, s1: number, ramp: number) {

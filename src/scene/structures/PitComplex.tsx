@@ -1,7 +1,8 @@
 import { useMemo } from 'react';
 import * as THREE from 'three';
 import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js';
-import { TRACK, nearestS } from '../../data/circuit/track';
+import { TRACK, frameAt, nearestS, wrapS } from '../../data/circuit/track';
+import { buildStrip } from '../track/geometry';
 import { PIT_GARAGES } from '../../data/facilities';
 import { getWorld } from '../world/world';
 import { useAppStore } from '../../store/useAppStore';
@@ -20,6 +21,30 @@ let pitFrameCache: ReturnType<typeof buildPitFrame> | null = null;
 export function computePitFrame() {
   if (!pitFrameCache) pitFrameCache = buildPitFrame();
   return pitFrameCache;
+}
+
+/** Distância livre entre a borda do pit lane (7 m) e a borda da pista. */
+export function pitGapAt(p: [number, number, number] | [number, number]) {
+  const x = p[0];
+  const z = p.length === 3 ? p[2] : p[1];
+  const ns = nearestS(x, z);
+  const f = frameAt(ns.s);
+  const sideSign = Math.sign((x - f.x) * f.lx + (z - f.z) * f.lz) || 1;
+  return { gap: ns.d - 3.5 - (sideSign > 0 ? f.wl : f.wr), s: ns.s, sideSign };
+}
+
+let pitRangeCache: { iStart: number; iEnd: number } | null = null;
+/** Trecho do eixo do pit lane fora da pista (o OSM o leva por cima da borda nas pontas). */
+export function pitLaneRange() {
+  if (pitRangeCache) return pitRangeCache;
+  const pit = TRACK.pit;
+  const at = (i: number) => pitGapAt([pit.x[i], pit.z[i]]).gap;
+  let iStart = 0;
+  while (iStart < pit.x.length / 3 && at(iStart) < 0.4) iStart++;
+  let iEnd = pit.x.length - 1;
+  while (iEnd > pit.x.length * 0.66 && at(iEnd) < 0.4) iEnd--;
+  pitRangeCache = { iStart, iEnd };
+  return pitRangeCache;
 }
 
 export function usePitFrame() {
@@ -149,7 +174,14 @@ export function PitComplex() {
   const lane = useMemo(() => {
     const { height } = getWorld();
     const pit = TRACK.pit;
-    const pts: [number, number, number][] = pit.x.map((x, i) => [x, pit.y[i] + 0.02, pit.z[i]]);
+    const allPts: [number, number, number][] = pit.x.map((x, i) => [x, pit.y[i] + 0.02, pit.z[i]]);
+    // Nas pontas, o eixo do pit lane do OSM corre sobre a borda da pista por ~200 m
+    // (entrada na Curva 15, saída na Reta Oposta). A faixa do pit termina onde
+    // encosta na pista; dali em diante, a junção é marcada na própria pista.
+    const { iStart, iEnd } = pitLaneRange();
+    const pts = allPts.slice(iStart, iEnd + 1);
+    const entry = pitGapAt(allPts[iStart]);
+    const exit = pitGapAt(allPts[iEnd]);
     // largura: 12 m junto às garagens, 7 m nos acessos
     const { c, along, W } = frame;
     const zoneW = (i: number) => {
@@ -188,6 +220,31 @@ export function PitComplex() {
       if (k <= 1 || k >= pts.length - 2) continue;
       const seg = pts.slice(k - 1, k + 1);
       lines.push(polylineStrip(seg, () => 7, () => off(k), 0.016));
+    }
+    // junções na pista: na saída, linha tracejada que vai da largura do pit lane até a
+    // borda (convergência); na entrada, linha contínua curta de desaceleração
+    const edgeLat = (s: number, sideSign: number, inset: number) => {
+      const f = frameAt(s);
+      return sideSign > 0 ? f.wl - inset : -f.wr + inset;
+    };
+    const trackLine = (s0: number, s1: number, sideSign: number, inset: (t: number) => number, t0: number, t1: number) => {
+      const g = buildStrip({
+        s0: wrapS(s0),
+        s1: wrapS(s1),
+        step: 1,
+        latA: (s) => edgeLat(s, sideSign, inset(t0 + (t1 - t0) * (wrapS(s - s0) / Math.max(0.01, s1 - s0)))) + 0.1,
+        latB: (s) => edgeLat(s, sideSign, inset(t0 + (t1 - t0) * (wrapS(s - s0) / Math.max(0.01, s1 - s0)))) - 0.1,
+        dy: () => 0.014,
+      });
+      for (const a of ['aS', 'aLat', 'aExtra']) g.deleteAttribute(a);
+      return g;
+    };
+    {
+      const L = 90;
+      const inset = (t: number) => 3.6 - 3.0 * t; // de 3,6 m (largura do pit) até 0,6 m da borda
+      for (let d = 0; d < L; d += 6) lines.push(trackLine(exit.s + d, exit.s + d + 3, exit.sideSign, inset, d / L, (d + 3) / L));
+      const Le = 40;
+      lines.push(trackLine(entry.s - Le, entry.s, entry.sideSign, (t) => 0.6 + 3.0 * t, 0, 1));
     }
     // muro dos boxes: lado do pit lane voltado para a pista, onde corre paralelo à reta
     const wallPts: [number, number, number][] = [];

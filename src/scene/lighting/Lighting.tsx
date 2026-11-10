@@ -46,7 +46,7 @@ function SkyDome({ top, horizon }: { top: string; horizon: string }) {
         fog: false,
         uniforms: { uTop: { value: new THREE.Color(top) }, uHor: { value: new THREE.Color(horizon) } },
         vertexShader: "varying vec3 vP; void main(){ vP = normalize(position); gl_Position = projectionMatrix * modelViewMatrix * vec4(position,1.0); }",
-        fragmentShader: "uniform vec3 uTop; uniform vec3 uHor; varying vec3 vP; void main(){ float h = clamp(vP.y, 0.0, 1.0); vec3 c = vP.y < 0.0 ? uHor : mix(uHor, uTop, pow(h, 0.55)); gl_FragColor = vec4(c, 1.0); #include <colorspace_fragment> }",
+        fragmentShader: "uniform vec3 uTop; uniform vec3 uHor; varying vec3 vP; void main(){ float h = clamp(vP.y, 0.0, 1.0); vec3 c = vP.y < 0.0 ? uHor : mix(uHor, uTop, pow(h, 0.55)); gl_FragColor = vec4(c, 1.0);\n#include <colorspace_fragment>\n}",
       }),
     [top, horizon],
   );

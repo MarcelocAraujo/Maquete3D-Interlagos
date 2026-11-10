@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js';
 
 /** Faixa ao longo de uma polilinha 3D (pit lane, vias elevadas, passarelas). */
 export function polylineStrip(
@@ -82,6 +83,32 @@ export function polylineWall(pts: [number, number, number][], h0: number, h1: nu
   g.computeBoundingBox();
   g.computeBoundingSphere();
   return g;
+}
+
+/** Desloca uma polilinha lateralmente (d > 0 = à esquerda do sentido dos pontos). */
+export function offsetPolyline(pts: [number, number, number][], d: number): [number, number, number][] {
+  return pts.map((p, i) => {
+    const a = pts[Math.max(0, i - 1)];
+    const b = pts[Math.min(pts.length - 1, i + 1)];
+    const l = Math.hypot(b[0] - a[0], b[2] - a[2]) || 1;
+    const lx = (b[2] - a[2]) / l;
+    const lz = -(b[0] - a[0]) / l;
+    return [p[0] + lx * d, p[1], p[2] + lz * d];
+  });
+}
+
+/** Bloco contínuo com espessura ao longo de uma polilinha (barreiras de pneus, muros). */
+export function polylineBlock(pts: [number, number, number][], h0: number, h1: number, thickness: number, uvScale = 3): THREE.BufferGeometry {
+  const a = offsetPolyline(pts, thickness / 2);
+  const b = offsetPolyline(pts, -thickness / 2);
+  const front = polylineWall(a, h0, h1, uvScale, false);
+  const back = polylineWall([...b].reverse(), h0, h1, uvScale, false);
+  // tampa superior
+  const top: [number, number, number][] = pts.map((p) => [p[0], p[1] + h1, p[2]]);
+  const cap = polylineStrip(top, () => thickness, () => 0, 0, uvScale);
+  const parts = [front, back, cap].filter((g) => g.getAttribute('position').count > 0);
+  // todas as partes são indexadas e têm position/normal/uv (compatíveis com mergeGeometries)
+  return parts.length > 1 ? mergeGeometries(parts) : parts[0];
 }
 
 /** Bloco (caixa) com transformação, para compor geometrias mescladas. */

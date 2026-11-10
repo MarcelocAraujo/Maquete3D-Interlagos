@@ -5,6 +5,7 @@ import { Trees } from './vegetation/Trees';
 import { Barriers } from './structures/Barriers';
 import { Props } from './structures/Props';
 import { Paddock } from './structures/Paddock';
+import { PaddockBuilding } from './structures/PaddockBuilding';
 import { Signage } from './structures/Signage';
 import { registerFacilityBounds } from './labels/Labels';
 
@@ -16,6 +17,7 @@ export function World3D() {
       <Buildings />
       <PitComplex />
       <Paddock />
+      <PaddockBuilding />
       <Signage />
       <Grandstands />
       <Barriers />
