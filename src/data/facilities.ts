@@ -92,6 +92,19 @@ export const FACILITIES: Record<string, FacilityInfo> = {
     ],
     sources: ['osm'],
   },
+  sinalizacao: {
+    id: 'sinalizacao',
+    kind: 'structure',
+    name: 'Sinalização de pista',
+    subtitle: 'Placas de distância, faixas e balizadores',
+    description: 'Placas de distância (150, 100 e 50 m) antes das frenagens fortes das curvas 1, 4, 10 e 12, faixas genéricas no alambrado das arquibancadas da reta e balizadores na entrada do pit lane. As posições são estimadas; as faixas não reproduzem patrocinadores reais.',
+    facts: [
+      f('Balizadores na entrada do pit lane', 'Citados nas notas da FIA de 2022 (“pit entry and apex bollards”); quantidade e posição exatas no modelo são estimativas', 'oficial', ['fia-2022-event-notes']),
+      f('Placas de distância', 'Posições estimadas antes das frenagens (150/100/50 m)', 'estimativa'),
+      f('Publicidade', 'Faixas genéricas, sem marcas reais', 'estimativa'),
+    ],
+    sources: ['fia-2022-event-notes'],
+  },
   'kart': {
     id: 'kart',
     kind: 'structure',

@@ -6,6 +6,12 @@ import { useAppStore, type Quality, type VisualMode } from '../../store/useAppSt
 import { occupied } from './occupancy';
 import { patchSceneMaterial } from '../materials/patch';
 import { styleOf } from '../modes/modeStyles';
+import { getAssets, instanceProto } from '../assets/assetLibrary';
+
+const hashT = (n: number) => {
+  const x = Math.sin(n * 91.345 + 7.1) * 43758.5453;
+  return x - Math.floor(x);
+};
 import { insideArea } from '../terrain/plinth';
 import { onHoverEvent, onSelectEvent } from '../selection/events';
 import type { Selection } from '../../data/types';
@@ -254,11 +260,33 @@ export function Trees() {
       if (!groups.has(t.sp)) groups.set(t.sp, []);
       groups.get(t.sp)!.push(t);
     }
-    const res: { sp: Species; mesh: THREE.InstancedMesh; items: TreeInstance[] }[] = [];
+    const res: { sp: string; mesh: THREE.InstancedMesh; items: TreeInstance[] }[] = [];
     const m = new THREE.Matrix4();
     const q = new THREE.Quaternion();
     const c = new THREE.Color();
     const r = rng(77);
+    // modelos prontos do pacote RCC Design (se importados): substituem as espécies procedurais
+    const protos = getAssets('tree');
+    if (protos.length) {
+      const byProto = new Map<number, { t: TreeInstance; m: THREE.Matrix4 }[]>();
+      const TARGET: Record<Species, number> = { folhosa: 7, 'copa-larga': 8, eucalipto: 13, conifera: 10, palmeira: 9, arbusto: 1.8 };
+      trees.forEach((t, k) => {
+        // espécie → faixa de modelos (bem distribuída, sem repetir um único modelo)
+        const pi = (Math.floor(hashT(k) * protos.length) + Object.keys(TARGET).indexOf(t.sp)) % protos.length;
+        const p = protos[pi];
+        const h = Math.min(16, TARGET[t.sp] * t.s);
+        const k2 = THREE.MathUtils.clamp(h / Math.max(0.5, p.size.y), 0.25, 4);
+        q.setFromAxisAngle(new THREE.Vector3(0, 1, 0), t.r);
+        m.compose(new THREE.Vector3(t.x, height.sample(t.x, t.z) - 0.15, t.z), q, new THREE.Vector3(k2, k2 * (0.9 + r() * 0.2), k2));
+        if (!byProto.has(pi)) byProto.set(pi, []);
+        byProto.get(pi)!.push({ t, m: m.clone() });
+      });
+      for (const [pi, list] of byProto) {
+        for (const mesh of instanceProto(protos[pi], list.map((x) => x.m), mode, { shadows: quality !== 'low' })) res.push({ sp: protos[pi].name, mesh, items: list.map((x) => x.t) });
+      }
+      if (import.meta.env.DEV) console.info(`[i3d] árvores (modelos RCC): ${trees.length}`);
+      return res;
+    }
     for (const [sp, items] of groups) {
       const geo = speciesGeometry(sp, mode, detail);
       const mesh = new THREE.InstancedMesh(geo, treeMaterial(mode), items.length);
@@ -288,9 +316,9 @@ export function Trees() {
   if (!show) return null;
   return (
     <group>
-      {meshes.map(({ sp, mesh, items }) => {
+      {meshes.map(({ sp, mesh, items }, idx) => {
         const sel = (e: { instanceId?: number }): Selection => ({ kind: 'vegetation', id: `${sp}|${items[e.instanceId ?? 0]?.src ?? 'osm-area'}` });
-        return <primitive key={sp} object={mesh} onClick={onSelectEvent((e) => sel(e))} {...onHoverEvent((e) => sel(e))} />;
+        return <primitive key={sp + idx} object={mesh} onClick={onSelectEvent((e) => sel(e))} {...onHoverEvent((e) => sel(e))} />;
       })}
     </group>
   );

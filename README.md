@@ -48,6 +48,10 @@ npm run data:build
 - **Análise de desempenho** (velocidades oficiais 2022/2025, perfil de altitude, setores, raios), **história** (linha do tempo, traçados, S do Senna, José Carlos Pace) e **fontes**.
 - **Qualidade gráfica** baixa/média/alta.
 
+## Modelos do pacote RCC Design (opcional)
+
+O app aceita os modelos do pacote pago *Cartoon Race Track Interlagos* (Unity Asset Store) como acabamento — árvores, muros, cercas, pneus, motorhomes, tendas, placas e cones — sem alterar a maquete. Os arquivos são licenciados e não vêm no repositório. Passo a passo em [docs/ASSETS-RCC.md](docs/ASSETS-RCC.md).
+
 ## Confiabilidade dos dados
 
 Cada dado exibido traz um selo: **oficial** (FIA, F1, Prefeitura), **secundária** (Wikipedia, equipes, imprensa, OSM), **estimativa** (medido no modelo ou inferido de imagens, com método indicado) ou **não disponível**. Nenhum número foi inventado para preencher painéis. Detalhes em [docs/FONTES.md](docs/FONTES.md), [docs/METODOLOGIA.md](docs/METODOLOGIA.md) e [docs/DADOS-CIRCUITO.md](docs/DADOS-CIRCUITO.md).

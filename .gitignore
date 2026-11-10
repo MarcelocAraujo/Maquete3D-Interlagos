@@ -9,3 +9,7 @@ research/f1cache/
 research/raw/osm_area.json
 *.tsbuildinfo
 .claude/
+
+# assets licenciados (RCC Design / Unity Asset Store) — não versionar
+public/assets/rcc/
+research/rcc-work/

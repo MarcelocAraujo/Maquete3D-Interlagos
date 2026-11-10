@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { loadWorld } from './scene/world/world';
+import { loadAssetLibrary } from './scene/assets/assetLibrary';
 import { useAppStore } from './store/useAppStore';
 import { Scene } from './scene/Scene';
 import { Interface } from './components/layout/Interface';
@@ -13,6 +14,7 @@ export function App() {
 
   useEffect(() => {
     loadWorld(setStep)
+      .then(() => loadAssetLibrary(setStep))
       .then(() => {
         setStep('Construindo a maquete 3D…');
         setLoaded(true);

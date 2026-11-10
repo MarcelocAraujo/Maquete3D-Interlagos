@@ -10,6 +10,7 @@ import { computePitFrame } from './PitComplex';
 import { insideArea } from '../terrain/plinth';
 import { onHoverEvent, onSelectEvent } from '../selection/events';
 import { registerSelectable } from '../selection/bounds';
+import { getAssets, instanceProto } from '../assets/assetLibrary';
 import type { Selection } from '../../data/types';
 
 /**
@@ -195,7 +196,24 @@ export function Paddock() {
     const m = new THREE.Matrix4();
     const q = new THREE.Quaternion();
     const box = new THREE.Box3();
+    // motorhomes e tendas do pacote RCC Design (se importados) substituem os procedurais
+    const assetFor: Partial<Record<Kind, ReturnType<typeof getAssets>>> = { motorhome: getAssets('motorhome'), tent: getAssets('tent') };
     for (const [kind, list] of groups) {
+      const protos = assetFor[kind];
+      if (protos && protos.length) {
+        const byP = new Map<number, THREE.Matrix4[]>();
+        list.forEach((it, i) => {
+          const pi = i % protos.length;
+          const p = protos[pi];
+          const extra = p.size.z > p.size.x ? Math.PI / 2 : 0;
+          q.setFromAxisAngle(new THREE.Vector3(0, 1, 0), it.rot + extra);
+          if (!byP.has(pi)) byP.set(pi, []);
+          byP.get(pi)!.push(new THREE.Matrix4().compose(new THREE.Vector3(it.x, height.sample(it.x, it.z) - 0.05, it.z), q, new THREE.Vector3(1, 1, 1)));
+          box.expandByPoint(new THREE.Vector3(it.x, height.sample(it.x, it.z) + 4, it.z));
+        });
+        for (const [pi, mats] of byP) out.push(...instanceProto(protos[pi], mats, mode, { shadows: quality !== 'low' }));
+        continue;
+      }
       const mesh = new THREE.InstancedMesh(vehicleGeometry(kind), vehicleMaterial(mode), list.length);
       list.forEach((it, i) => {
         q.setFromAxisAngle(new THREE.Vector3(0, 1, 0), it.rot);

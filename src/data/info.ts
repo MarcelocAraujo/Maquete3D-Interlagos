@@ -220,7 +220,7 @@ export function getInfo(sel: Selection): InfoView | null {
       const [label, rel] = srcLabel[src] ?? ['—', 'estimativa'];
       return {
         kindLabel: 'Vegetação',
-        title: SPECIES_LABEL[sp] ?? 'Vegetação',
+        title: SPECIES_LABEL[sp] ?? `Árvore — modelo ${sp} (RCC Design)`,
         description: 'Modelo procedural representativo. As espécies reais não estão identificadas nos dados abertos; a variedade de formas, escalas e rotações evita a repetição de um único modelo.',
         facts: [f('Origem da posição', label, rel, ['osm']), f('Espécie real', 'Não disponível', 'indisponivel')],
         sources: ['osm'],

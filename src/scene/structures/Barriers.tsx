@@ -7,6 +7,7 @@ import { useAppStore } from '../../store/useAppStore';
 import { structMat } from '../materials/structureMaterials';
 import { computeRunoffs, envelope } from '../track/geometry';
 import { polylineWall } from './polylineStrip';
+import { getAssets, instanceProto, modulesAlong, type AssetProto } from '../assets/assetLibrary';
 import { insideArea } from '../terrain/plinth';
 import { onHoverEvent, onSelectEvent } from '../selection/events';
 
@@ -109,7 +110,31 @@ export function Barriers() {
         fencePosts.push(new THREE.Matrix4().makeRotationY(ang).setPosition(b[0], b[1] + y0, b[2]));
       }
     };
+    // módulos prontos (RCC Design), quando importados: muros, muros com cerca e pneus
+    const A = { wall: getAssets('wall'), fence: getAssets('fence'), tyre: getAssets('tyre') };
+    const assetRuns: { proto: AssetProto; pts: [number, number, number][] }[] = [];
+    const pickProto = (list: AssetProto[], i: number) => list[i % list.length];
+    let runIdx = 0;
     for (const r of runs) {
+      runIdx++;
+      if (r.type === 'tyre' && A.tyre.length) {
+        assetRuns.push({ proto: pickProto(A.tyre, runIdx), pts: r.pts });
+        fences.push(polylineWall(r.pts, 1.15, 4.6, 3, false));
+        addFencePosts(r, 0);
+        continue;
+      }
+      if (r.type === 'wallFence' && (A.fence.length || A.wall.length)) {
+        assetRuns.push({ proto: A.fence.length ? pickProto(A.fence, runIdx) : pickProto(A.wall, runIdx), pts: r.pts });
+        if (!A.fence.length) {
+          fences.push(polylineWall(r.pts, 1.25, 5.2, 3, false));
+          addFencePosts(r, 0);
+        }
+        continue;
+      }
+      if (r.type === 'wall' && A.wall.length) {
+        assetRuns.push({ proto: pickProto(A.wall, runIdx), pts: r.pts });
+        continue;
+      }
       if (r.type === 'guardrail') {
         rails.push(polylineWall(r.pts, 0.45, 0.78, 4));
         rails.push(polylineWall(r.pts, 0.88, 1.18, 4));
@@ -141,6 +166,7 @@ export function Barriers() {
       walls: walls.length ? mergeGeometries(walls) : null,
       fences: fences.length ? mergeGeometries(fences) : null,
       fencePosts,
+      assetRuns,
     };
   }, [mode]);
 
@@ -168,6 +194,20 @@ export function Barriers() {
     return m;
   }, [geos, mode]);
 
+  const assetMeshes = useMemo(() => {
+    const { height } = getWorld();
+    const byProto = new Map<AssetProto, THREE.Matrix4[]>();
+    for (const ar of geos.assetRuns) {
+      // módulo orientado pelo maior lado horizontal
+      const len = Math.max(ar.proto.size.x, ar.proto.size.z);
+      const mats = modulesAlong(ar.pts, len, (x, z) => height.sample(x, z));
+      const turn = ar.proto.size.z > ar.proto.size.x ? new THREE.Matrix4().makeRotationY(Math.PI / 2) : null;
+      if (!byProto.has(ar.proto)) byProto.set(ar.proto, []);
+      for (const m of mats) byProto.get(ar.proto)!.push(turn ? m.multiply(turn) : m);
+    }
+    return [...byProto.entries()].flatMap(([p, mats]) => instanceProto(p, mats, mode));
+  }, [geos, mode]);
+
   if (!show) return null;
   const sel = (id: string) => ({ kind: 'barrier' as const, id });
   return (
@@ -175,6 +215,9 @@ export function Barriers() {
       {geos.rails && <mesh geometry={geos.rails} material={structMat(mode, 'guardrail')} castShadow receiveShadow onClick={onSelectEvent(sel('guardrail'))} {...onHoverEvent(sel('guardrail'))} />}
       <primitive object={postMesh} />
       <primitive object={fencePostMesh} />
+      {assetMeshes.map((m, i) => (
+        <primitive key={i} object={m} onClick={onSelectEvent(sel('wall'))} {...onHoverEvent(sel('wall'))} />
+      ))}
       {geos.tyres && <mesh geometry={geos.tyres} material={structMat(mode, 'tyre')} castShadow receiveShadow onClick={onSelectEvent(sel('tyre'))} {...onHoverEvent(sel('tyre'))} />}
       {geos.walls && <mesh geometry={geos.walls} material={structMat(mode, 'concrete')} castShadow receiveShadow onClick={onSelectEvent(sel('wall'))} {...onHoverEvent(sel('wall'))} />}
       {geos.fences && <mesh geometry={geos.fences} material={structMat(mode, 'fence')} onClick={onSelectEvent(sel('fence'))} {...onHoverEvent(sel('fence'))} />}

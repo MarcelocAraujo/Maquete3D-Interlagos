@@ -5,6 +5,7 @@ import { Trees } from './vegetation/Trees';
 import { Barriers } from './structures/Barriers';
 import { Props } from './structures/Props';
 import { Paddock } from './structures/Paddock';
+import { Signage } from './structures/Signage';
 import { registerFacilityBounds } from './labels/Labels';
 
 /** Agrupa as estruturas do autódromo e do entorno. */
@@ -15,6 +16,7 @@ export function World3D() {
       <Buildings />
       <PitComplex />
       <Paddock />
+      <Signage />
       <Grandstands />
       <Barriers />
       <Trees />
