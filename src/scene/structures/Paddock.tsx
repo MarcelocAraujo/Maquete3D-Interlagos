@@ -7,6 +7,7 @@ import { useAppStore, type VisualMode } from '../../store/useAppStore';
 import { patchSceneMaterial } from '../materials/patch';
 import { styleOf } from '../modes/modeStyles';
 import { computePitFrame } from './PitComplex';
+import { insideStand } from './standLayout';
 import { insideArea } from '../terrain/plinth';
 import { onHoverEvent, onSelectEvent } from '../selection/events';
 import { registerSelectable } from '../selection/bounds';
@@ -131,6 +132,7 @@ function layout(): Item[] {
   const blocked = (x: number, z: number, clear = 4) => {
     if (!insideArea(x, z)) return true;
     if (nearestS(x, z).d < 28) return true; // longe da pista
+    if (insideStand(x, z, clear)) return true; // nada dentro das arquibancadas
     for (const b of complexBuildings) {
       const bb = polyBounds(b.poly);
       if (x > bb.minX - clear && x < bb.maxX + clear && z > bb.minZ - clear && z < bb.maxZ + clear && pointInPoly(x, z, b.poly)) return true;

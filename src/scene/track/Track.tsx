@@ -13,7 +13,8 @@ import { asphaltTextures, gravelTexture } from '../materials/textures';
 import { styleOf } from '../modes/modeStyles';
 import { patchTrackMaterial } from '../materials/patch';
 import { getWorld } from '../world/world';
-import { SAUSAGE_CORNERS, buildStrip, brakingFactor, computeKerbs, computeRunoffs, envelope, hash, racingLine } from './geometry';
+import { pitExitProfile } from '../structures/PitComplex';
+import { SAUSAGE_CORNERS, runoffDepthAt, buildStrip, brakingFactor, computeKerbs, computeRunoffs, envelope, hash, racingLine } from './geometry';
 import { onHoverEvent, onSelectEvent } from '../selection/events';
 
 /** Resolve o elemento da pista a partir de um ponto clicado. */
@@ -225,8 +226,16 @@ function useTrackGeometries() {
     const kerbGeo = kerbGeos.length ? mergeGeometries(kerbGeos) : null;
 
     // linhas brancas de borda
-    const edgeL = buildStrip({ s0: 0, s1: TRACK_LENGTH, latA: (_s, f) => f.wl - 0.08, latB: (_s, f) => f.wl - 0.5, dy: () => 0.01 });
-    const edgeR = buildStrip({ s0: 0, s1: TRACK_LENGTH, latA: (_s, f) => -f.wr + 0.5, latB: (_s, f) => -f.wr + 0.08, dy: () => 0.01 });
+    // do lado da saída dos boxes, a borda vira tracejada no trecho em que a saída converge
+    const ex = pitExitProfile();
+    const edgeFor = (side: 1 | -1, s0: number, s1: number) =>
+      side === 1
+        ? buildStrip({ s0, s1, latA: (_s, f) => f.wl - 0.08, latB: (_s, f) => f.wl - 0.5, dy: () => 0.01 })
+        : buildStrip({ s0, s1, latA: (_s, f) => -f.wr + 0.5, latB: (_s, f) => -f.wr + 0.08, dy: () => 0.01 });
+    const exitEdge: THREE.BufferGeometry[] = [edgeFor(ex.side, wrapS(ex.sM), wrapS(ex.sT2))];
+    for (let d = 0; d < ex.sM - ex.sT2 - 1; d += 6) exitEdge.push(edgeFor(ex.side, wrapS(ex.sT2 + d), wrapS(ex.sT2 + d + 3)));
+    const edgeL = ex.side === 1 ? mergeGeometries(exitEdge) : edgeFor(1, 0, TRACK_LENGTH);
+    const edgeR = ex.side === -1 ? mergeGeometries(exitEdge) : edgeFor(-1, 0, TRACK_LENGTH);
 
     // linha de largada, grid e marcações transversais
     const marks: THREE.BufferGeometry[] = [edgeL, edgeR];
@@ -272,7 +281,7 @@ function useTrackGeometries() {
       g.computeVertexNormals();
       return g;
     };
-    const band = (z: ReturnType<typeof computeRunoffs>[number], from: (e: number) => number, to: (e: number) => number, ramp: number, lift: number, cols: number) =>
+    const band = (z: ReturnType<typeof computeRunoffs>[number], from: (e: number, s: number) => number, to: (e: number, s: number) => number, ramp: number, lift: number, cols: number) =>
       drape(
         buildStrip({
           s0: z.s0,
@@ -281,11 +290,11 @@ function useTrackGeometries() {
           cols,
           latA: (s, f) => {
             const e = envelope(s, z.s0, z.s1, ramp);
-            return z.side === 1 ? f.wl + to(e) : -f.wr - from(e);
+            return z.side === 1 ? f.wl + to(e, s) : -f.wr - from(e, s);
           },
           latB: (s, f) => {
             const e = envelope(s, z.s0, z.s1, ramp);
-            return z.side === 1 ? f.wl + from(e) : -f.wr - to(e);
+            return z.side === 1 ? f.wl + from(e, s) : -f.wr - to(e, s);
           },
         }),
         lift,
@@ -295,13 +304,13 @@ function useTrackGeometries() {
     const asphalts: THREE.BufferGeometry[] = [];
     const gravels: THREE.BufferGeometry[] = [];
     for (const z of zones) {
-      paints.push(band(z, () => 0.3, (e) => 0.3 + z.paint * Math.min(1, e * 3), 8, 0.06, 2));
+      if (z.paint > 0) paints.push(band(z, () => 0.3, (e) => 0.3 + z.paint * Math.min(1, e * 3), 8, 0.06, 2));
       if (z.surface === 'grass') continue;
       // superfície até ~1,5 m antes da barreira
-      const reach = (e: number) => 0.3 + z.paint + Math.max(0.01, (z.depth - z.paint - 1.5) * e);
+      const reach = (e: number, s: number) => 0.3 + z.paint + Math.max(0.01, (runoffDepthAt(z, s) - z.paint - 1.5) * e);
       (z.surface === 'gravel' ? gravels : asphalts).push(band(z, () => 0.3 + z.paint - 0.2, reach, 25, 0.04, 6));
     }
-    const paintGeo = mergeGeometries(paints);
+    const paintGeo = paints.length ? mergeGeometries(paints) : null;
     const asphaltGeo = asphalts.length ? mergeGeometries(asphalts) : null;
     const gravelGeo = gravels.length ? mergeGeometries(gravels) : null;
 
@@ -363,7 +372,7 @@ export function Track() {
       )}
       {layers.runoff && (
         <>
-          <mesh geometry={g.paintGeo} material={runoffMaterial(mode, 'paint')} receiveShadow onClick={runoffClick} {...runoffHover} />
+          {g.paintGeo && <mesh geometry={g.paintGeo} material={runoffMaterial(mode, 'paint')} receiveShadow onClick={runoffClick} {...runoffHover} />}
           {g.asphaltGeo && <mesh geometry={g.asphaltGeo} material={runoffMaterial(mode, 'asphalt')} receiveShadow onClick={runoffClick} {...runoffHover} />}
           {g.gravelGeo && <mesh geometry={g.gravelGeo} material={runoffMaterial(mode, 'gravel')} receiveShadow onClick={runoffClick} {...runoffHover} />}
         </>

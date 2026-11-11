@@ -7,6 +7,7 @@ import { useAppStore, type VisualMode } from '../../store/useAppStore';
 import { structMat } from '../materials/structureMaterials';
 import { lightPoolTexture, glowTexture } from '../materials/textures';
 import { insideArea } from '../terrain/plinth';
+import { insideStand } from './standLayout';
 import { computePitFrame } from './PitComplex';
 import { registerSelectable } from '../selection/bounds';
 import { onHoverEvent, onSelectEvent } from '../selection/events';
@@ -14,7 +15,7 @@ import type { Selection } from '../../data/types';
 import { sceneUniforms } from '../materials/patch';
 import { useFrame } from '@react-three/fiber';
 
-const keepFor = (mode: VisualMode) => (x: number, z: number) => insideArea(x, z);
+const keepFor = (mode: VisualMode) => (x: number, z: number) => insideArea(x, z) && !insideStand(x, z, 1);
 
 /** Torre treliçada genérica (linhas de transmissão / telecomunicações). */
 function latticeTower(h: number, base: number, top: number) {

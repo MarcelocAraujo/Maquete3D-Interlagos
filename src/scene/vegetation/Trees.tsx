@@ -13,6 +13,7 @@ const hashT = (n: number) => {
   return x - Math.floor(x);
 };
 import { insideArea } from '../terrain/plinth';
+import { insideStand } from '../structures/standLayout';
 import { onHoverEvent, onSelectEvent } from '../selection/events';
 import type { Selection } from '../../data/types';
 
@@ -181,7 +182,7 @@ export function computeTrees(quality: Quality, mode: VisualMode): TreeInstance[]
   const r = rng(1234);
   const out: TreeInstance[] = [];
   const dens = quality === 'high' ? 1 : quality === 'medium' ? 0.6 : 0.3;
-  const keep = (x: number, z: number) => insideArea(x, z);
+  const keep = (x: number, z: number) => insideArea(x, z) && !insideStand(x, z, 3);
   const push = (x: number, z: number, ctx: Parameters<typeof chooseSpecies>[1], src: TreeInstance['src'], force = false) => {
     if (!keep(x, z)) return;
     if (!force && occupied(x, z)) return;

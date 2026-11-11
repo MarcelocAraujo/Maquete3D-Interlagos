@@ -85,8 +85,8 @@ export function Signage() {
         const f = frameAt(s);
         const side = left ? -1 : 1;
         const w = side === 1 ? f.wl : f.wr;
-        const x = f.x + f.lx * side * (w + 3);
-        const z = f.z + f.lz * side * (w + 3);
+        const x = f.x + f.lx * side * (w + 2); // do lado da pista, antes de muros e telas
+        const z = f.z + f.lz * side * (w + 2);
         const ang = Math.atan2(-f.tz, f.tx); // placa voltada para quem chega
         boards.push({ n: d, m: new THREE.Matrix4().makeRotationY(ang + Math.PI / 2).setPosition(x, height.sample(x, z), z) });
       }

@@ -150,6 +150,8 @@ export interface GrandstandInfo {
   bandOsmBuilding?: number;
   /** Para estruturas sem polígono OSM: posição ao longo da pista (s), lado e afastamento. */
   place?: { s0: number; s1: number; side: 'L' | 'R'; offset: number; depth: number };
+  /** Afastamento mínimo (m) da frente até a borda da pista; seções mais próximas são recuadas (fora da área de escape). */
+  minFront?: number;
   covered: boolean;
   temporary: boolean;
   seatColor: string;
@@ -230,6 +232,7 @@ export const GRANDSTANDS: GrandstandInfo[] = [
     id: 'gs-d',
     name: 'Setor D',
     bandOsmBuilding: 1563340820,
+    minFront: 30, // seções invertidas do polígono OSM: recuadas para fora da área de escape da Curva 1
     covered: true,
     temporary: false,
     seatColor: '#ffb000',
@@ -272,6 +275,23 @@ export const GRANDSTANDS: GrandstandInfo[] = [
     facts: [
       f('Localização', 'Lado externo da Subida dos Boxes / reta principal', 'estimativa'),
       f('Posição no modelo', 'Trecho sem edificações no OSM entre o Setor A e a arquibancada da chegada', 'estimativa', ['osm']),
+      f('Setor e capacidade', 'Não disponível', 'indisponivel'),
+    ],
+    sources: ['osm'],
+  },
+  {
+    id: 'gs-sol',
+    name: 'Arquibancada da Curva do Sol',
+    place: { s0: 572, s1: 806, side: 'R', offset: 17, depth: 32 },
+    covered: true,
+    temporary: false,
+    seatColor: '#c98a12',
+    idReliability: 'estimativa',
+    description:
+      'Grande arquibancada coberta no lado externo da Curva do Sol, sobre a área que o OSM marca como estacionamento. Representa a ocupação do trecho em dia de GP, conforme o modelo de referência; setor, capacidade e forma exata não confirmados.',
+    facts: [
+      f('Localização', 'Lado externo da Curva do Sol', 'estimativa'),
+      f('Posição no modelo', 'Atrás da barreira de pneus e da tela, sobre o estacionamento do OSM', 'estimativa', ['osm']),
       f('Setor e capacidade', 'Não disponível', 'indisponivel'),
     ],
     sources: ['osm'],

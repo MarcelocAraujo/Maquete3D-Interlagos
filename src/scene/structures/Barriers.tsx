@@ -5,11 +5,12 @@ import { TRACK, TRACK_LENGTH, frameAt, nearestS, wrapS } from '../../data/circui
 import { getWorld } from '../world/world';
 import { useAppStore, type VisualMode } from '../../store/useAppStore';
 import { structMat } from '../materials/structureMaterials';
-import { computeRunoffs, envelope, hash } from '../track/geometry';
+import { computeRunoffs, envelope, hash, runoffDepthAt } from '../track/geometry';
+import { insideStand, standClearance } from './standLayout';
 import { polylineWall } from './polylineStrip';
 import { getAssets, instanceProto, modulesAlong, type AssetProto } from '../assets/assetLibrary';
 import { insideArea } from '../terrain/plinth';
-import { pitLaneRange } from './PitComplex';
+import { computePitFrame, pitExitProfile, pitLaneRange } from './PitComplex';
 import { onHoverEvent, onSelectEvent } from '../selection/events';
 import {
   STACK,
@@ -37,7 +38,7 @@ import {
  * wall           – muro de concreto (Laranjinha, lado interno das retas)
  * wallFence      – muro + tela alta (reta dos boxes, Reta Oposta)
  */
-type BType = 'guardrail' | 'railFence' | 'tyreRail' | 'tyreFence' | 'tyreWallFence' | 'wall' | 'wallFence';
+type BType = 'guardrail' | 'railFence' | 'tyreRail' | 'tyreFence' | 'tyreWallFence' | 'wall' | 'wallFence' | 'fence';
 
 interface Run {
   type: BType;
@@ -60,6 +61,7 @@ function computeRuns(): Run[] {
   const { height } = getWorld();
   const runoffs = computeRunoffs();
   const pr = pitLaneRange();
+  const ex = pitExitProfile();
   const allPit = TRACK.pit.x.map((x, i) => [x, TRACK.pit.z[i]] as [number, number]);
   const pitPts = allPit.slice(pr.iStart, pr.iEnd + 1);
   const pb = {
@@ -95,15 +97,15 @@ function computeRuns(): Run[] {
           side: a.side,
           s0: wrapS(a.s1 - 25),
           s1: wrapS(b.s0 + 25),
-          o0: 0.3 + a.depth + 0.8,
-          o1: 0.3 + b.depth + 0.8,
+          o0: 0.3 + runoffDepthAt(a, a.s1) + 0.8,
+          o1: 0.3 + runoffDepthAt(b, b.s0) + 0.8,
         });
     }
   const runs: Run[] = [];
   const step = 1.5;
   for (const side of [1, -1] as const) {
     // 1ª passada: tipo e afastamento desejados em cada ponto
-    const plan: { s: number; off: number; type: BType; main: boolean }[] = [];
+    const plan: { s: number; off: number; type: BType; main: boolean; max: number }[] = [];
     for (let s = 0; s <= TRACK_LENGTH; s += step) {
       const f = frameAt(s);
       const w = side === 1 ? f.wl : f.wr;
@@ -114,7 +116,7 @@ function computeRuns(): Run[] {
         if (z.side !== side) continue;
         const e = envelope(s, z.s0, z.s1, 25);
         if (e > 0) {
-          off = Math.max(off, 0.3 + z.depth * e + 0.8);
+          off = Math.max(off, 0.3 + runoffDepthAt(z, s) * e + 0.8);
           if (e > 0.3) {
             type = z.barrier;
             inRunoff = true;
@@ -154,7 +156,19 @@ function computeRuns(): Run[] {
           }
         }
       }
-      plan.push({ s, off, type, main });
+      // saída dos boxes reconstruída: tela logo depois da borda externa da faixa
+      {
+        const ds = wrapS(s - ex.sX);
+        if (side === ex.side && ds <= ex.sM + 4 - ex.sX) {
+          off = Math.max(1.2, ex.outer(s) - w + 1.0);
+          type = 'fence';
+        }
+      }
+      // nunca dentro de uma arquibancada: a proteção (e a tela atrás dela) fica antes da frente
+      const margin = type === 'tyreFence' || type === 'tyreWallFence' || type === 'tyreRail' ? 2.6 : type === 'railFence' ? 1.3 : 0.9;
+      const clear = standClearance(s, side);
+      if (off > clear - margin) off = Math.max(1.2, clear - margin);
+      plan.push({ s, off, type, main, max: Math.max(1.2, clear - margin) });
     }
     // 2ª passada: suaviza os degraus de afastamento nas trocas de tipo (±7,5 m);
     // os platôs das áreas de escape ficam iguais
@@ -162,7 +176,10 @@ function computeRuns(): Run[] {
     const offs = plan.map((_, i) => {
       let a = 0;
       let n = 0;
+      // a tela da saída dos boxes é uma estrutura à parte: não se mistura com os vizinhos
+      const isF = plan[i].type === 'fence';
       for (let j = Math.max(0, i - R); j <= Math.min(plan.length - 1, i + R); j++) {
+        if ((plan[j].type === 'fence') !== isF) continue;
         a += plan[j].off;
         n++;
       }
@@ -171,7 +188,7 @@ function computeRuns(): Run[] {
     let cur = null as Run | null;
     for (let i = 0; i < plan.length; i++) {
       const { s, type, main } = plan[i];
-      const off = offs[i];
+      const off = Math.min(offs[i], plan[i].max);
       const f = frameAt(s);
       const w = side === 1 ? f.wl : f.wr;
       const x = f.x + f.lx * side * (w + off);
@@ -187,7 +204,7 @@ function computeRuns(): Run[] {
       if (!cur || cur.type !== type) {
         if (cur && cur.pts.length > 1) runs.push(cur);
         // emenda com o trecho anterior (sem buraco na troca de tipo)
-        const prev: P3 | undefined = cur ? cur.pts[cur.pts.length - 1] : undefined;
+        const prev: P3 | undefined = cur && cur.type !== 'fence' && type !== 'fence' ? cur.pts[cur.pts.length - 1] : undefined;
         cur = { type, side, pts: prev ? [prev] : [], s0: s, s1: s };
       }
       cur.pts.push([x, y, z]);
@@ -444,7 +461,8 @@ function build(): Built {
       out.assetRuns.push({ proto: pick(A.wall, idx), pts: r.pts });
       continue;
     }
-    if (r.type === 'guardrail') addGuardrail(r.pts, r.side);
+    if (r.type === 'fence') addFence(r.pts, r.side, 0, 0);
+    else if (r.type === 'guardrail') addGuardrail(r.pts, r.side);
     else if (r.type === 'railFence') {
       addGuardrail(r.pts, r.side);
       addFence(r.pts, r.side, 0, 0.45);
@@ -454,6 +472,43 @@ function build(): Built {
     } else addWall(r.pts, r.side, 1.05, 0.45, idx);
   }
   if (prevRun) joinFences(prevRun);
+  // saída dos boxes (trecho em polilinha, do fim das garagens ao fim da Curva do Sol):
+  // tela do lado externo da faixa, separando-a do miolo
+  {
+    const pit = TRACK.pit;
+    const pr = pitLaneRange();
+    const fr = computePitFrame();
+    const pts: P3[] = [];
+    let laneSide: 1 | -1 = 1;
+    for (let i = pr.iStart; i <= pr.iEnd; i++) {
+      const px = pit.x[i];
+      const pz = pit.z[i];
+      // só depois do prédio dos boxes (lado da saída)
+      const dx = px - fr.c.x;
+      const dz = pz - fr.c.y;
+      const along = dx * fr.along.x + dz * fr.along.y;
+      const across = Math.abs(dx * fr.front.x + dz * fr.front.y) - fr.W / 2;
+      if (Math.abs(along) < fr.L / 2 + 34 && across < 30) continue;
+      if (i < pit.x.length / 2) continue; // trecho da entrada não
+      const a = Math.max(pr.iStart, i - 2);
+      const b = Math.min(pit.x.length - 1, i + 2);
+      const l = Math.hypot(pit.x[b] - pit.x[a], pit.z[b] - pit.z[a]) || 1;
+      const lx = (pit.z[b] - pit.z[a]) / l;
+      const lz = -(pit.x[b] - pit.x[a]) / l;
+      // lado oposto à pista
+      const dl = nearestS(px + lx * 6, pz + lz * 6).d;
+      const dr = nearestS(px - lx * 6, pz - lz * 6).d;
+      const sg = dl > dr ? 1 : -1;
+      laneSide = sg === 1 ? 1 : -1;
+      const o = 3.5 + 1.0;
+      const x = px + lx * sg * o;
+      const z = pz + lz * sg * o;
+      if (insideStand(x, z, 0.5)) continue;
+      pts.push([x, height.sample(x, z) - 0.05, z]);
+    }
+    // laneSide = 1: a tela está à esquerda do sentido da polilinha, a faixa à direita
+    if (pts.length > 3) addFence(smoothRun(pts), laneSide, 0, 0);
+  }
   // Cercas do OSM (perímetro de terrenos) ficam de fora: cruzavam as telas da pista.
   // Muros do OSM só longe da pista.
   const lift = (pts: [number, number][]) => pts.map((p) => [p[0], height.sample(p[0], p[1]) - 0.1, p[1]] as P3);

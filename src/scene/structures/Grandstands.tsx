@@ -2,8 +2,8 @@ import { useMemo } from 'react';
 import * as THREE from 'three';
 import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js';
 import { GRANDSTANDS, type GrandstandInfo } from '../../data/facilities';
-import { frameAt, nearestS, rangeLength } from '../../data/circuit/track';
-import { getWorld, minAreaRect, type XZ } from '../world/world';
+import { getWorld, type XZ } from '../world/world';
+import { sectionsOf, type StandSection } from './standLayout';
 import { useAppStore, type VisualMode } from '../../store/useAppStore';
 import { structMat } from '../materials/structureMaterials';
 import { patchSceneMaterial } from '../materials/patch';
@@ -12,112 +12,8 @@ import { registerSelectable } from '../selection/bounds';
 import { onHoverEvent, onSelectEvent } from '../selection/events';
 import type { Selection } from '../../data/types';
 
-interface StandSection {
-  a: XZ; // início da frente (junto à pista)
-  b: XZ; // fim da frente
-  back: XZ; // vetor unitário para trás (afastando da pista)
-  depth: number;
-}
-
 const ROW_D = 0.85;
 const ROW_H = 0.42;
-
-/** Seções retas de cada arquibancada (OSM: retângulo mínimo; demais: ao longo da pista). */
-function sectionsOf(g: GrandstandInfo): StandSection[] {
-  const { features } = getWorld();
-  if (g.bandOsmBuilding) {
-    const b = features.buildings.find((x) => x.id === g.bandOsmBuilding);
-    if (b) return bandSections(b.poly);
-  }
-  if (g.osmId) {
-    const f = features.grandstands.find((x) => x.osmId === g.osmId);
-    if (!f) return [];
-    const r = minAreaRect(f.poly);
-    const u: XZ = [Math.cos(r.angle), Math.sin(r.angle)];
-    const v: XZ = [-u[1], u[0]];
-    const side1: XZ = [r.center[0] + v[0] * (r.width / 2), r.center[1] + v[1] * (r.width / 2)];
-    const side2: XZ = [r.center[0] - v[0] * (r.width / 2), r.center[1] - v[1] * (r.width / 2)];
-    const d1 = nearestS(side1[0], side1[1]).d;
-    const d2 = nearestS(side2[0], side2[1]).d;
-    const frontC = d1 < d2 ? side1 : side2;
-    const back: XZ = d1 < d2 ? [-v[0], -v[1]] : v;
-    const a: XZ = [frontC[0] - u[0] * (r.length / 2), frontC[1] - u[1] * (r.length / 2)];
-    const b: XZ = [frontC[0] + u[0] * (r.length / 2), frontC[1] + u[1] * (r.length / 2)];
-    return [{ a, b, back, depth: r.width }];
-  }
-  const p = g.place!;
-  const len = rangeLength(p.s0, p.s1);
-  const n = Math.max(1, Math.ceil(len / 36));
-  const out: StandSection[] = [];
-  for (let i = 0; i < n; i++) {
-    const s0 = p.s0 + (len * i) / n;
-    const s1 = p.s0 + (len * (i + 1)) / n - 1.5;
-    const pt = (s: number): XZ => {
-      const f = frameAt(s);
-      const sign = p.side === 'L' ? 1 : -1;
-      const w = p.side === 'L' ? f.wl : f.wr;
-      return [f.x + f.lx * sign * (w + p.offset), f.z + f.lz * sign * (w + p.offset)];
-    };
-    const a = pt(s0);
-    const b = pt(s1);
-    const f = frameAt((s0 + s1) / 2);
-    const sign = p.side === 'L' ? 1 : -1;
-    out.push({ a, b, back: [f.lx * sign, f.lz * sign], depth: p.depth });
-  }
-  return out;
-}
-
-/**
- * Pegada em faixa curva: divide o polígono nas duas bordas longas (separadas
- * pelos quatro vértices de maior deflexão) e cria uma seção por aresta da borda
- * voltada para a pista.
- */
-function bandSections(poly: XZ[]): StandSection[] {
-  const n = poly.length;
-  const turn = poly.map((p, i) => {
-    const a = poly[(i - 1 + n) % n];
-    const c = poly[(i + 1) % n];
-    const a1 = Math.atan2(p[1] - a[1], p[0] - a[0]);
-    const a2 = Math.atan2(c[1] - p[1], c[0] - p[0]);
-    let d = Math.abs(a2 - a1);
-    if (d > Math.PI) d = 2 * Math.PI - d;
-    return { i, d };
-  });
-  const corners = [...turn].sort((x, y) => y.d - x.d).slice(0, 4).map((t) => t.i).sort((x, y) => x - y);
-  // as tampas são as arestas entre pares de cantos adjacentes
-  const chains: XZ[][] = [];
-  for (let k = 0; k < 4; k += 2) {
-    const start = corners[(k + 1) % 4];
-    const end = corners[(k + 2) % 4];
-    const chain: XZ[] = [];
-    for (let i = start; ; i = (i + 1) % n) {
-      chain.push(poly[i]);
-      if (i === end) break;
-    }
-    chains.push(chain);
-  }
-  const meanD = (c: XZ[]) => c.reduce((acc, p) => acc + nearestS(p[0], p[1]).d, 0) / c.length;
-  const [inner, outer] = meanD(chains[0]) < meanD(chains[1]) ? [chains[0], chains[1]] : [chains[1], chains[0]];
-  const oc = outer.reduce((acc, p) => [acc[0] + p[0] / outer.length, acc[1] + p[1] / outer.length], [0, 0]);
-  const depth = Math.max(8, Math.min(30, outer.reduce((acc, p) => acc + Math.min(...inner.map((q) => Math.hypot(q[0] - p[0], q[1] - p[1]))), 0) / outer.length));
-  const out: StandSection[] = [];
-  for (let i = 0; i < inner.length - 1; i++) {
-    const a = inner[i];
-    const b = inner[i + 1];
-    const L = Math.hypot(b[0] - a[0], b[1] - a[1]);
-    if (L < 3) continue;
-    let nx = -(b[1] - a[1]) / L;
-    let nz = (b[0] - a[0]) / L;
-    const mx = (a[0] + b[0]) / 2;
-    const mz = (a[1] + b[1]) / 2;
-    if (nx * (oc[0] - mx) + nz * (oc[1] - mz) < 0) {
-      nx = -nx;
-      nz = -nz;
-    }
-    out.push({ a, b, back: [nx, nz], depth });
-  }
-  return out;
-}
 
 interface StandGeo {
   steps: THREE.BufferGeometry;

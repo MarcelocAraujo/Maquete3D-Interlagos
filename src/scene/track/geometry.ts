@@ -1,6 +1,7 @@
 import * as THREE from 'three';
 import { TRACK, TRACK_LENGTH, frameAt, rangeLength, wrapS, type TrackFrame } from '../../data/circuit/track';
 import { CORNERS } from '../../data/circuit/corners';
+import { standClearance } from '../structures/standLayout';
 
 /**
  * Construtor genérico de faixas ao longo da pista.
@@ -174,6 +175,9 @@ export interface KerbRun {
   corner: number;
 }
 
+/** Curvas sem zebra externa (Curva do Sol: linha branca e grama). */
+const NO_OUTSIDE_KERB = [3];
+
 export function computeKerbs(): KerbRun[] {
   const runs: KerbRun[] = [];
   for (const c of CORNERS) {
@@ -197,7 +201,7 @@ export function computeKerbs(): KerbRun[] {
     const inLen = rangeLength(a, b);
     if (c.minRadius < 260 && inLen > 4) runs.push({ s0: wrapS(a - 6), s1: wrapS(b + 6), side: sign, kind: 'inside', corner: c.number });
     // externa: da metade final ao fim da saída
-    if (c.minRadius < 150) {
+    if (c.minRadius < 150 && !NO_OUTSIDE_KERB.includes(c.number)) {
       const o0 = wrapS(c.apexS + Math.min(18, inLen * 0.3));
       const o1 = wrapS(b + Math.min(45, 12 + 2200 / c.minRadius));
       runs.push({ s0: o0, s1: o1, side: (-sign) as 1 | -1, kind: 'outside', corner: c.number });
@@ -222,6 +226,8 @@ export interface RunoffZone {
   /** superfície entre a faixa pintada e a barreira (grama = terreno, sem malha própria) */
   surface: RunoffSurface;
   barrier: RunoffBarrier;
+  /** a barreira vai até perto das arquibancadas (profundidade = alvo máximo) */
+  fitStands?: boolean;
   corner?: number;
   label: string;
 }
@@ -234,11 +240,13 @@ export interface RunoffZone {
  * guard-rail atrás no miolo. Na Laranjinha, muro de concreto. Profundidades = estimativa.
  */
 export function computeRunoffs(): RunoffZone[] {
-  type Spec = { depth: number; paint?: number; surface: RunoffSurface; barrier: RunoffBarrier; pre?: number; post?: number };
+  type Spec = { depth: number; paint?: number; surface: RunoffSurface; barrier: RunoffBarrier; pre?: number; post?: number; fitStands?: boolean };
   const spec: Record<number, Spec> = {
-    1: { depth: 20, surface: 'asphalt', barrier: 'tyreWallFence', pre: 35, post: 8 },
+    // S do Senna: escape grande do fim do Setor M até a Curva do Sol, com a tela junto às arquibancadas
+    1: { depth: 42, surface: 'asphalt', barrier: 'tyreWallFence', pre: -12, post: 100, fitStands: true },
     2: { depth: 9, surface: 'grass', barrier: 'tyreFence', pre: 5, post: 15 },
-    3: { depth: 11, surface: 'grass', barrier: 'tyreFence', pre: 0, post: 25 },
+    // Curva do Sol: sem zebra externa nem faixa pintada — linha branca e grama
+    3: { depth: 11, paint: 0, surface: 'grass', barrier: 'tyreFence', pre: 0, post: 25 },
     4: { depth: 30, surface: 'gravel', barrier: 'tyreFence', pre: 30, post: 10 },
     5: { depth: 11, surface: 'grass', barrier: 'tyreRail', pre: 0, post: 25 },
     6: { depth: 14, surface: 'grass', barrier: 'tyreRail', pre: 10, post: 10 },
@@ -260,7 +268,8 @@ export function computeRunoffs(): RunoffZone[] {
       s1: wrapS(c.s1 + (sp.post ?? 0)),
       side: sign,
       depth: sp.depth,
-      paint: Math.min(sp.paint ?? 3, sp.depth - 1),
+      paint: Math.max(0, Math.min(sp.paint ?? 3, sp.depth - 1)),
+      fitStands: sp.fitStands,
       surface: sp.surface,
       barrier: sp.barrier,
       corner: c.number,
@@ -268,6 +277,15 @@ export function computeRunoffs(): RunoffZone[] {
     });
   }
   return zones;
+}
+
+/** Profundidade da área de escape em s (limitada pela frente das arquibancadas quando fitStands). */
+export function runoffDepthAt(z: RunoffZone, s: number): number {
+  if (!z.fitStands) return z.depth;
+  // menor folga numa janela de ±9 m (contorno suave, sem degraus entre seções)
+  let c = Infinity;
+  for (let d = -9; d <= 9; d += 1.5) c = Math.min(c, standClearance(wrapS(s + d), z.side));
+  return Math.max(6, Math.min(z.depth, c - 3.6));
 }
 
 /**

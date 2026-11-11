@@ -3,6 +3,7 @@ import * as THREE from 'three';
 import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js';
 import { TRACK, frameAt, nearestS, wrapS } from '../../data/circuit/track';
 import { buildStrip } from '../track/geometry';
+import { CORNERS } from '../../data/circuit/corners';
 import { PIT_GARAGES } from '../../data/facilities';
 import { getWorld } from '../world/world';
 import { useAppStore } from '../../store/useAppStore';
@@ -34,17 +35,86 @@ export function pitGapAt(p: [number, number, number] | [number, number]) {
 }
 
 let pitRangeCache: { iStart: number; iEnd: number } | null = null;
-/** Trecho do eixo do pit lane fora da pista (o OSM o leva por cima da borda nas pontas). */
+/**
+ * Trecho do eixo do pit lane usado como polilinha. Na entrada, o OSM o leva por cima
+ * da borda da pista; na saída, a polilinha vai só até o fim da Curva do Sol — dali em
+ * diante a saída é reconstruída ao longo da pista (pitExitProfile).
+ */
 export function pitLaneRange() {
   if (pitRangeCache) return pitRangeCache;
   const pit = TRACK.pit;
   const at = (i: number) => pitGapAt([pit.x[i], pit.z[i]]).gap;
   let iStart = 0;
   while (iStart < pit.x.length / 3 && at(iStart) < 0.4) iStart++;
-  let iEnd = pit.x.length - 1;
-  while (iEnd > pit.x.length * 0.66 && at(iEnd) < 0.4) iEnd--;
+  const joinS = exitJoinS();
+  let iEnd = Math.floor(pit.x.length * 0.66);
+  while (iEnd < pit.x.length - 1) {
+    const ns = nearestS(pit.x[iEnd], pit.z[iEnd]);
+    if (ns.s >= joinS && ns.s < joinS + 400) break;
+    iEnd++;
+  }
   pitRangeCache = { iStart, iEnd };
   return pitRangeCache;
+}
+
+/** s em que a saída dos boxes deixa de ser polilinha: fim da Curva do Sol + 22 m. */
+function exitJoinS() {
+  const c3 = CORNERS.find((c) => c.number === 3);
+  return wrapS((c3 ? c3.s1 : 814) + 22);
+}
+
+export interface PitExit {
+  side: 1 | -1;
+  /** fim da polilinha → encosta na pista → corre ao lado → fim da convergência */
+  sX: number;
+  sT: number;
+  sT2: number;
+  sM: number;
+  /** distâncias laterais (m) a partir do eixo da pista, do lado indicado por side */
+  inner: (s: number) => number;
+  outer: (s: number) => number;
+}
+let pitExitCache: PitExit | null = null;
+/**
+ * Saída dos boxes reconstruída ao longo da pista: uma faixa de 7 m que, depois da
+ * Curva do Sol, se aproxima da borda (45 m), corre ao lado separada por 0,6 m (35 m) e
+ * converge para dentro da pista (75 m). Comprimentos = estimativa visual.
+ */
+export function pitExitProfile(): PitExit {
+  if (pitExitCache) return pitExitCache;
+  const pit = TRACK.pit;
+  const { iEnd } = pitLaneRange();
+  const g = pitGapAt([pit.x[iEnd], pit.z[iEnd]]);
+  const side = g.sideSign as 1 | -1;
+  const cX = nearestS(pit.x[iEnd], pit.z[iEnd]).d;
+  const sX = g.s;
+  const sT = sX + 45;
+  const sT2 = sT + 35;
+  const sM = sT2 + 75;
+  const w = (s: number) => {
+    const f = frameAt(wrapS(s));
+    return side === 1 ? f.wl : f.wr;
+  };
+  const sm = (t: number) => {
+    const u = Math.max(0, Math.min(1, t));
+    return u * u * (3 - 2 * u);
+  };
+  const center = (s: number) => cX + (w(s) + 4.1 - cX) * sm((s - sX) / (sT - sX));
+  const d = (s: number) => wrapS(s - sX) + sX; // s contínuo a partir de sX
+  const inner = (s0: number) => {
+    const s = d(s0);
+    if (s <= sT) return center(s) - 3.5;
+    if (s <= sT2) return w(s) + 0.6;
+    return w(s);
+  };
+  const outer = (s0: number) => {
+    const s = d(s0);
+    if (s <= sT) return center(s) + 3.5;
+    if (s <= sT2) return w(s) + 7.6;
+    return w(s) + 7.6 * (1 - sm((s - sT2) / (sM - sT2)));
+  };
+  pitExitCache = { side, sX, sT, sT2, sM, inner, outer };
+  return pitExitCache;
 }
 
 export function usePitFrame() {
@@ -181,7 +251,7 @@ export function PitComplex() {
     const { iStart, iEnd } = pitLaneRange();
     const pts = allPts.slice(iStart, iEnd + 1);
     const entry = pitGapAt(allPts[iStart]);
-    const exit = pitGapAt(allPts[iEnd]);
+    const ex = pitExitProfile();
     // largura: 12 m junto às garagens, 7 m nos acessos
     const { c, along, W } = frame;
     const zoneW = (i: number) => {
@@ -189,9 +259,12 @@ export function PitComplex() {
       const d = p.clone().sub(c);
       const a = Math.abs(d.dot(along));
       const across = Math.abs(d.dot(frame.front)) - W / 2;
-      if (a < frame.L / 2 + 30 && across < 30) return 1;
-      if (a < frame.L / 2 + 90 && across < 40) return 1 - (a - frame.L / 2 - 30) / 60;
-      return 0;
+      // faixa larga (rápida + trabalho) só em frente às garagens; fora dali, faixa única de 7 m
+      // transições suaves tanto ao longo da fachada quanto ao se afastar dela
+      const kAlong = a < frame.L / 2 + 6 ? 1 : Math.max(0, 1 - (a - frame.L / 2 - 6) / 24);
+      const kAcross = Math.max(0, Math.min(1, 1 - (across - 12) / 12));
+      const k = Math.min(kAlong, kAcross);
+      return k * k * (3 - 2 * k);
     };
     const wz = pts.map((_, i) => Math.max(0, Math.min(1, zoneW(i))));
     const width = (i: number) => 7 + 5.5 * wz[i];
@@ -221,30 +294,56 @@ export function PitComplex() {
       const seg = pts.slice(k - 1, k + 1);
       lines.push(polylineStrip(seg, () => 7, () => off(k), 0.016));
     }
-    // junções na pista: na saída, linha tracejada que vai da largura do pit lane até a
-    // borda (convergência); na entrada, linha contínua curta de desaceleração
-    const edgeLat = (s: number, sideSign: number, inset: number) => {
-      const f = frameAt(s);
-      return sideSign > 0 ? f.wl - inset : -f.wr + inset;
-    };
-    const trackLine = (s0: number, s1: number, sideSign: number, inset: (t: number) => number, t0: number, t1: number) => {
-      const g = buildStrip({
-        s0: wrapS(s0),
-        s1: wrapS(s1),
-        step: 1,
-        latA: (s) => edgeLat(s, sideSign, inset(t0 + (t1 - t0) * (wrapS(s - s0) / Math.max(0.01, s1 - s0)))) + 0.1,
-        latB: (s) => edgeLat(s, sideSign, inset(t0 + (t1 - t0) * (wrapS(s - s0) / Math.max(0.01, s1 - s0)))) - 0.1,
-        dy: () => 0.014,
-      });
-      for (const a of ['aS', 'aLat', 'aExtra']) g.deleteAttribute(a);
+    // linha pintada sobre o plano da pista (lat com sinal; >0 = esquerda)
+    const paintLine = (s0: number, s1: number, lat: (s: number) => number, width = 0.18) => {
+      const g = buildStrip({ s0: wrapS(s0), s1: wrapS(s1), step: 1, latA: (s) => lat(s) + width / 2, latB: (s) => lat(s) - width / 2, dy: () => 0.014 });
+      for (const k of ['aS', 'aLat', 'aExtra']) g.deleteAttribute(k);
       return g;
     };
+    const S = ex.side;
+    const wAt = (s: number) => {
+      const f = frameAt(wrapS(s));
+      return S === 1 ? f.wl : f.wr;
+    };
+    // saída: faixa reconstruída ao longo da pista (encosta, corre ao lado e converge)
+    const exitSurface = buildStrip({
+      s0: wrapS(ex.sX),
+      s1: wrapS(ex.sM),
+      step: 1,
+      cols: 3,
+      skirt: 0.9,
+      latA: (s) => (S === 1 ? ex.outer(s) : -ex.inner(s)),
+      latB: (s) => (S === 1 ? ex.inner(s) : -ex.outer(s)),
+      dy: () => -0.015,
+    });
+    for (const k of ['aS', 'aLat', 'aExtra']) exitSurface.deleteAttribute(k);
+    // linha branca externa (lado da tela) até fundir com a borda da pista
+    lines.push(paintLine(ex.sX, ex.sM - 6, (s) => S * (ex.outer(s) - 0.25)));
+    // linha branca interna (lado do guard-rail / da pista) até o início da convergência
+    lines.push(paintLine(ex.sX, ex.sT2, (s) => S * (ex.inner(s) + 0.25)));
+    // linha contínua que o piloto que sai dos boxes deve manter à sua direita, do lado
+    // esquerdo da Reta Oposta, voltando à borda no final
+    const L1 = 190;
+    const L2 = 40;
+    lines.push(paintLine(ex.sT2, ex.sT2 + L1, (s) => S * (wAt(s) - 3.6), 0.2));
+    lines.push(
+      paintLine(ex.sT2 + L1, ex.sT2 + L1 + L2, (s) => {
+        const t = Math.min(1, Math.max(0, wrapS(s - ex.sT2 - L1) / L2));
+        return S * (wAt(s) - 3.6 + 3.0 * t);
+      }, 0.2),
+    );
+    // entrada: linha contínua curta de desaceleração
     {
-      const L = 90;
-      const inset = (t: number) => 3.6 - 3.0 * t; // de 3,6 m (largura do pit) até 0,6 m da borda
-      for (let d = 0; d < L; d += 6) lines.push(trackLine(exit.s + d, exit.s + d + 3, exit.sideSign, inset, d / L, (d + 3) / L));
       const Le = 40;
-      lines.push(trackLine(entry.s - Le, entry.s, entry.sideSign, (t) => 0.6 + 3.0 * t, 0, 1));
+      const es = entry.s;
+      const eS = entry.sideSign;
+      lines.push(
+        paintLine(es - Le, es, (s) => {
+          const f = frameAt(wrapS(s));
+          const t = Math.min(1, Math.max(0, wrapS(s - (es - Le)) / Le));
+          return eS > 0 ? f.wl - (0.6 + 3.0 * t) : -f.wr + (0.6 + 3.0 * t);
+        }),
+      );
     }
     // muro dos boxes: lado do pit lane voltado para a pista, onde corre paralelo à reta
     const wallPts: [number, number, number][] = [];
@@ -266,7 +365,7 @@ export function PitComplex() {
     const wall = wallPts.length > 2 ? polylineWall(wallPts, 0, 1.35, 3) : null;
     const fence = wallPts.length > 2 ? polylineWall(wallPts, 1.35, 4.2, 3, false) : null;
     const all = new THREE.Box3().setFromBufferAttribute(surface.getAttribute('position') as THREE.BufferAttribute);
-    return { surface, lines: mergeGeometries(lines), wall, fence, box: all };
+    return { surface, exitSurface, lines: mergeGeometries(lines), wall, fence, box: all };
   }, [frame]);
 
   // registro para seleção/realce
@@ -309,6 +408,7 @@ export function PitComplex() {
         <primitive object={doorsRef} onClick={onSelectEvent((e) => garageSel(e))} {...onHoverEvent((e) => garageSel(e))} />
       </group>
       <mesh geometry={lane.surface} material={structMat(mode, 'pitAsphalt')} receiveShadow onClick={click} {...hover} />
+      <mesh geometry={lane.exitSurface} material={structMat(mode, 'pitAsphalt')} receiveShadow onClick={click} {...hover} />
       <mesh geometry={lane.lines} material={structMat(mode, 'paint')} receiveShadow />
       {lane.wall && <mesh geometry={lane.wall} material={structMat(mode, 'concrete')} castShadow receiveShadow onClick={click} {...hover} />}
       {lane.fence && <mesh geometry={lane.fence} material={structMat(mode, 'fence')} />}
