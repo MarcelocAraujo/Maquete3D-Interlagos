@@ -49,9 +49,9 @@ O script `scripts/assets/import-rcc.mjs`:
 | Papel | Uso | Sem o pacote |
 |---|---|---|
 | `tree` | Substitui as espécies procedurais nas mesmas posições (OSM), com alturas limitadas a 16 m e modelos alternados para evitar repetição | Árvores procedurais |
-| `wall` | Módulos ao longo dos trechos de muro baixo | Muro procedural |
-| `fence` | Módulos ao longo dos trechos de muro + alambrado (áreas de público) | Muro + alambrado procedurais |
-| `tyre` | Módulos no fim das áreas de escape | Barreira de pneus procedural |
+| `wall` | Módulos ao longo dos trechos de muro baixo | Muro procedural em módulos de 3 m com juntas |
+| `fence` | Módulos ao longo dos trechos de muro + alambrado (áreas de público) | Muro + alambrado procedurais (postes, braços, tubos e tela) |
+| `tyre` | Módulos no fim das áreas de escape | Pilhas de pneus procedurais instanciadas (duas fileiras) |
 | `motorhome`, `tent` | Fileiras do paddock atrás dos boxes | Veículos e tendas procedurais |
 | `sign` | Faixas no alambrado das arquibancadas da reta | Faixas genéricas |
 | `cone` | Balizadores da entrada do pit lane | Balizadores procedurais |

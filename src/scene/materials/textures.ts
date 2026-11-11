@@ -155,9 +155,8 @@ export const concreteTexture = () =>
 /** Tela de alambrado (alpha) para cercas de proteção. */
 export const fenceTexture = () =>
   memo('fence', () => {
-    // Tela de alambrado: malha losangular densa sobre um fundo translúcido, com
-    // tubo superior, inferior e intermediário. O fundo translúcido mantém a tela
-    // visível à distância (antes só os postes apareciam — efeito "cerca de pasto").
+    // Tela de alambrado: malha losangular densa sobre um fundo translúcido (mantém a
+    // tela visível à distância). Postes e tubos são geometria 3D separada.
     const S = 128;
     const data = new Uint8Array(S * S * 4);
     for (let y = 0; y < S; y++)
@@ -165,13 +164,9 @@ export const fenceTexture = () =>
         const d1 = Math.abs(((x + y) % 8) - 4);
         const d2 = Math.abs(((x - y + 128) % 8) - 4);
         const wire = Math.max(0, 1 - Math.min(d1, d2) / 0.9);
-        const rail = y < 4 || y > S - 5 || Math.abs(y - S * 0.42) < 1.5 ? 1 : 0;
-        const post = x < 4 ? 1 : 0;
-        const a = Math.max(0.34 + wire * 0.5, rail, post);
         const i = (y * S + x) * 4;
-        const c = rail || post ? 175 : 205;
-        data[i] = data[i + 1] = data[i + 2] = c;
-        data[i + 3] = Math.min(1, a) * 255;
+        data[i] = data[i + 1] = data[i + 2] = 200;
+        data[i + 3] = Math.min(1, 0.3 + wire * 0.55) * 255;
       }
     return makeTexture(data, S, true);
   });

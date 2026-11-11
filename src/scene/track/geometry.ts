@@ -208,7 +208,8 @@ export function computeKerbs(): KerbRun[] {
 
 export type RunoffSurface = 'grass' | 'asphalt' | 'gravel';
 /** Barreira no fim da área de escape: pneus com tela alta, pneus com guard-rail atrás, ou muro de concreto. */
-export type RunoffBarrier = 'tyreFence' | 'tyreRail' | 'wall';
+/** tyreWallFence: pneus + barreira modular de concreto + tela (Curva 1, FIA 2022). */
+export type RunoffBarrier = 'tyreFence' | 'tyreRail' | 'tyreWallFence' | 'wall';
 
 export interface RunoffZone {
   s0: number;
@@ -235,7 +236,7 @@ export interface RunoffZone {
 export function computeRunoffs(): RunoffZone[] {
   type Spec = { depth: number; paint?: number; surface: RunoffSurface; barrier: RunoffBarrier; pre?: number; post?: number };
   const spec: Record<number, Spec> = {
-    1: { depth: 20, surface: 'asphalt', barrier: 'tyreFence', pre: 35, post: 8 },
+    1: { depth: 20, surface: 'asphalt', barrier: 'tyreWallFence', pre: 35, post: 8 },
     2: { depth: 9, surface: 'grass', barrier: 'tyreFence', pre: 5, post: 15 },
     3: { depth: 11, surface: 'grass', barrier: 'tyreFence', pre: 0, post: 25 },
     4: { depth: 30, surface: 'gravel', barrier: 'tyreFence', pre: 30, post: 10 },

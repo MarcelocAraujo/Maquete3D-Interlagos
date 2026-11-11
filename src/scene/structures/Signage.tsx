@@ -94,12 +94,14 @@ export function Signage() {
     // faixas no alambrado do lado das arquibancadas da reta (s > 3820 ou s < 300)
     const banners: { i: number; m: THREE.Matrix4 }[] = [];
     let bi = 0;
-    for (let s = 3840; s < TRACK.length + 290; s += 22) {
+    // até s≈265: depois disso o alambrado da reta dá lugar à barreira da Curva 1
+    for (let s = 3840; s < TRACK.length + 265; s += 22) {
       const f = frameAt(s);
       const x = f.x - f.lx * (f.wr + 3.0);
       const z = f.z - f.lz * (f.wr + 3.0);
       const ang = Math.atan2(-f.tz, f.tx);
-      banners.push({ i: bi++, m: new THREE.Matrix4().makeRotationY(ang).setPosition(x, Math.max(height.sample(x, z), f.y - 0.5) + 1.9, z) });
+      // face legível voltada para a pista (antes ficava virada para a arquibancada e aparecia espelhada)
+      banners.push({ i: bi++, m: new THREE.Matrix4().makeRotationY(ang + Math.PI).setPosition(x, Math.max(height.sample(x, z), f.y - 0.5) + 1.9, z) });
     }
     // balizadores na entrada do pit lane
     const bollards: THREE.Matrix4[] = [];
