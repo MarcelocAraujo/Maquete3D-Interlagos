@@ -92,7 +92,11 @@ export function tyreStackGeometry() {
     // banda + chanfro inferior (o chanfro marca a separação entre os pneus da pilha)
     const prof = [new THREE.Vector2(TYRE_R - 0.045, y), new THREE.Vector2(TYRE_R, y + 0.05), new THREE.Vector2(TYRE_R, y + TYRE_H)];
     const side = new THREE.LatheGeometry(prof, seg, k * 0.35).toNonIndexed();
-    side.deleteAttribute('uv');
+    // uv: u ao redor (×3 repetições), v 0→1 ao longo do perfil (chanfro → topo da banda)
+    {
+      const uv = side.getAttribute('uv') as THREE.BufferAttribute;
+      for (let i = 0; i < uv.count; i++) uv.setX(i, uv.getX(i) * 3);
+    }
     parts.push(colorize(side, 1));
   }
   const top = STACK * TYRE_H;
@@ -100,17 +104,14 @@ export function tyreStackGeometry() {
   const ring = new THREE.RingGeometry(0.15, TYRE_R, seg, 1).toNonIndexed();
   ring.rotateX(-Math.PI / 2);
   ring.translate(0, top, 0);
-  ring.deleteAttribute('uv');
   parts.push(colorize(ring, 0.85));
   const hole = new THREE.CylinderGeometry(0.15, 0.15, 0.2, seg, 1, true).toNonIndexed();
   hole.scale(-1, 1, 1); // faces internas
   hole.translate(0, top - 0.1, 0);
-  hole.deleteAttribute('uv');
   parts.push(colorize(hole, 0.35));
   const floor = new THREE.CircleGeometry(0.15, seg).toNonIndexed();
   floor.rotateX(-Math.PI / 2);
   floor.translate(0, top - 0.2, 0);
-  floor.deleteAttribute('uv');
   parts.push(colorize(floor, 0.15));
   tyreStackGeo = mergeGeometries(parts);
   tyreStackGeo.computeVertexNormals();
@@ -207,7 +208,23 @@ export function wBeamGeometry(samples: Sample[], baseHeights: number[], lateral:
     }
     g.computeVertexNormals();
   }
-  g.setAttribute('uv', new THREE.Float32BufferAttribute(new Float32Array((pos.length / 3) * 2), 2));
+  // uv: u = distância ao longo (m/2), v = posição no perfil (mapa de rugosidade escovada)
+  {
+    const uv = new Float32Array((pos.length / 3) * 2);
+    let k = 0;
+    for (let h = 0; h < baseHeights.length; h++)
+      for (let face = 0; face < 2; face++) {
+        let acc = 0;
+        for (let si = 0; si < samples.length; si++) {
+          if (si > 0) acc += samples[si].p.distanceTo(samples[si - 1].p);
+          for (let c = 0; c < cols; c++) {
+            uv[k++] = acc / 2;
+            uv[k++] = c / (cols - 1);
+          }
+        }
+      }
+    g.setAttribute('uv', new THREE.Float32BufferAttribute(uv, 2));
+  }
   return g;
 }
 

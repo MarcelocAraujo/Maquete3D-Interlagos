@@ -9,10 +9,12 @@ export interface ExtrudeOut {
   col: number[];
   wallIdx: number[];
   roofIdx: number[];
+  /** por vértice: 1 = telhado de telha cerâmica (textura de telha), 0 = demais */
+  tile: number[];
 }
 
 export function newExtrudeOut(): ExtrudeOut {
-  return { pos: [], nor: [], uv: [], col: [], wallIdx: [], roofIdx: [] };
+  return { pos: [], nor: [], uv: [], col: [], wallIdx: [], roofIdx: [], tile: [] };
 }
 
 /**
@@ -20,6 +22,7 @@ export function newExtrudeOut(): ExtrudeOut {
  * listas de índices separadas (grupos de material). Retorna a faixa de
  * triângulos ocupada (para o picking por faceIndex).
  */
+const TILE_FLAG_WALL = 0;
 export function extrudeFootprint(
   out: ExtrudeOut,
   polyIn: XZ[],
@@ -46,7 +49,7 @@ export function extrudeFootprint(
     out.pos.push(a[0], y0, a[1], b[0], y0, b[1], b[0], y1, b[1], a[0], y1, a[1]);
     for (let k = 0; k < 4; k++) {
       out.nor.push(nx, 0, nz);
-      out.col.push(wallColor.r, wallColor.g, wallColor.b);
+      out.col.push(wallColor.r, wallColor.g, wallColor.b); out.tile.push(TILE_FLAG_WALL);
     }
     const u0 = perim / uvScale[0];
     const u1 = (perim + len) / uvScale[0];
@@ -68,7 +71,7 @@ export function extrudeFootprint(
     out.pos.push(p[0], y1, p[1]);
     out.nor.push(0, 1, 0);
     out.uv.push(p[0] / 12, p[1] / 12);
-    out.col.push(roofColor.r, roofColor.g, roofColor.b);
+    out.col.push(roofColor.r, roofColor.g, roofColor.b); out.tile.push(TILE_FLAG_WALL);
   }
   for (const t of tris) {
     // triângulos com normal para cima
@@ -88,6 +91,7 @@ export function toGeometry(out: ExtrudeOut, withColor = true): THREE.BufferGeome
   g.setAttribute('normal', new THREE.Float32BufferAttribute(out.nor, 3));
   g.setAttribute('uv', new THREE.Float32BufferAttribute(out.uv, 2));
   if (withColor) g.setAttribute('color', new THREE.Float32BufferAttribute(out.col, 3));
+  if (out.tile.length === out.pos.length / 3) g.setAttribute('aTile', new THREE.Float32BufferAttribute(out.tile, 1));
   const idx = [...out.wallIdx, ...out.roofIdx];
   g.setIndex(idx);
   g.addGroup(0, out.wallIdx.length, 0);
@@ -137,7 +141,7 @@ export function addGableRoof(out: ExtrudeOut, rect: { center: [number, number]; 
       out.pos.push(p[0], p[1], p[2]);
       out.nor.push(nn.x, nn.y, nn.z);
       out.uv.push(p[0] / 12, p[2] / 12);
-      out.col.push(color.r, color.g, color.b);
+      out.col.push(color.r, color.g, color.b); out.tile.push(1);
     }
     out.roofIdx.push(base, base + 1, base + 2);
   }

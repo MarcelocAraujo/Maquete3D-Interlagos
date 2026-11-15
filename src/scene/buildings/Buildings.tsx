@@ -5,7 +5,7 @@ import { getWorld, minAreaRect, pointInPoly, polyArea, polyCentroid, rng, type B
 import { useAppStore, type VisualMode } from '../../store/useAppStore';
 import { addGableRoof, extrudeFootprint, newExtrudeOut, singleBuildingGeometry, toGeometry } from './extrude';
 import { styleOf } from '../modes/modeStyles';
-import { facadeTextures, ribbonFacadeTextures } from '../materials/textures';
+import { facadeTextures, flatRoofTexture, ribbonFacadeTextures, roofTileMaps } from '../materials/textures';
 import { patchSceneMaterial, sceneUniforms } from '../materials/patch';
 import { LANDMARK_BUILDINGS, insideArea } from '../terrain/plinth';
 import { registerSelectable } from '../selection/bounds';
@@ -75,6 +75,42 @@ function pickBuilding(batch: Batch, faceIndex: number | undefined): BuildingFeat
   return batch.items[i] ?? null;
 }
 
+/**
+ * Cobertura: a cor vem do vértice; a textura depende do atributo aTile (1 = telha
+ * cerâmica com fiadas e relevo, 0 = cobertura plana com grão). No GAME MODE as
+ * fiadas ficam só na cor (sem normal), para manter as facetas limpas.
+ */
+function roofMaterial(realistic: boolean) {
+  const tile = roofTileMaps();
+  const m = new THREE.MeshStandardMaterial({
+    vertexColors: true,
+    roughness: 0.85,
+    metalness: 0,
+    flatShading: !realistic,
+    map: tile.map,
+    normalMap: realistic ? tile.normalMap : null,
+    normalScale: new THREE.Vector2(0.8, 0.8),
+  });
+  const flat = flatRoofTexture();
+  m.onBeforeCompile = (shader) => {
+    shader.uniforms.uFlat = { value: flat };
+    shader.vertexShader = shader.vertexShader
+      .replace('#include <common>', '#include <common>\nattribute float aTile;\nvarying float vTile;')
+      .replace('#include <begin_vertex>', '#include <begin_vertex>\nvTile = aTile;');
+    shader.fragmentShader = shader.fragmentShader
+      .replace('#include <common>', '#include <common>\nvarying float vTile;\nuniform sampler2D uFlat;')
+      .replace(
+        '#include <map_fragment>',
+        `vec4 i3dTile = texture2D(map, vMapUv);
+vec4 i3dFlat = texture2D(uFlat, vMapUv * 2.0);
+diffuseColor *= mix(i3dFlat, i3dTile, vTile);`,
+      )
+      .replace('mapN.xy *= normalScale;', 'mapN.xy *= normalScale * vTile;');
+  };
+  m.customProgramCacheKey = () => `roof-${realistic ? 'r' : 'g'}`;
+  return m;
+}
+
 const matCache = new Map<string, THREE.Material[]>();
 function buildingMaterials(mode: VisualMode, complex: boolean): THREE.Material[] {
   const key = `${mode}-${complex}`;
@@ -85,7 +121,7 @@ function buildingMaterials(mode: VisualMode, complex: boolean): THREE.Material[]
     // complexo: janelas em faixa (edifícios comerciais/apoio); entorno: janelas residenciais
     const rf = ribbonFacadeTextures();
     const wall = new THREE.MeshStandardMaterial({ vertexColors: true, map: complex ? rf.map : f.map, emissiveMap: complex ? rf.emissiveMap : f.emissiveMap, emissive: new THREE.Color('#ffd9a0'), emissiveIntensity: 0, roughness: 0.8, metalness: 0 });
-    const roof = new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.8, metalness: 0.05 });
+    const roof = roofMaterial(true);
     // janelas acesas à noite
     const prev = wall.onBeforeCompile;
     wall.onBeforeCompile = (shader, r) => {
@@ -99,7 +135,7 @@ function buildingMaterials(mode: VisualMode, complex: boolean): THREE.Material[]
     mats = [patchSceneMaterial(wall, `bwall-${complex}`), patchSceneMaterial(roof, `broof-${complex}`)];
   } else {
     const wall = new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.85, metalness: 0, flatShading: true });
-    const roof = new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.8, metalness: 0, flatShading: true });
+    const roof = roofMaterial(false);
     mats = [patchSceneMaterial(wall, 'bwall-game'), patchSceneMaterial(roof, 'broof-game')];
   }
   matCache.set(key, mats);

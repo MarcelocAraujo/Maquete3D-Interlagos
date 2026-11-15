@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 import type { VisualMode } from '../../store/useAppStore';
 import { patchSceneMaterial, sceneUniforms } from './patch';
-import { concreteTexture, fenceTexture, asphaltTextures, hexTexture } from './textures';
+import { brushedRoughnessTexture, concreteMaps, fenceTexture, asphaltTextures, hexTexture } from './textures';
 import { styleOf } from '../modes/modeStyles';
 
 export type StructMat =
@@ -54,7 +54,10 @@ export function structMat(mode: VisualMode, key: StructMat): THREE.Material {
   const flatShading = style.flat;
   const textured = !!sp.textured;
   const base = { color: sp.color, roughness: sp.roughness ?? 0.85, metalness: sp.metalness ?? 0, flatShading };
-  const concreteMap = textured ? (mode === 'game' && key === 'concrete' ? hexTexture() : concreteTexture()) : null;
+  const pbr = textured && !(mode === 'game' && key === 'concrete') ? concreteMaps() : null;
+  const concreteMap = textured ? (pbr ? pbr.map : hexTexture()) : null;
+  // metais no modo realista: rugosidade escovada (riscos finos ao longo da peça)
+  const brushed = mode === 'sim' && (key === 'metal' || key === 'guardrail' || key === 'darkMetal');
   let m: THREE.Material;
   switch (key) {
     case 'glass':
@@ -82,7 +85,14 @@ export function structMat(mode: VisualMode, key: StructMat): THREE.Material {
       m = new THREE.MeshBasicMaterial({ color: '#fff3d6', toneMapped: false });
       break;
     default:
-      m = new THREE.MeshStandardMaterial({ ...base, map: concreteMap });
+      m = new THREE.MeshStandardMaterial({
+        ...base,
+        map: concreteMap,
+        normalMap: pbr ? pbr.normalMap : null,
+        normalScale: pbr ? new THREE.Vector2(0.55, 0.55) : undefined,
+        roughnessMap: pbr ? pbr.roughnessMap : brushed ? brushedRoughnessTexture() : null,
+        roughness: brushed ? Math.min(1, (sp.roughness ?? 0.4) + 0.35) : base.roughness,
+      });
   }
   if (key !== 'lamp') patchSceneMaterial(m, `struct-${key}`);
   cache.set(k, m);

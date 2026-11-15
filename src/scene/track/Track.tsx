@@ -9,7 +9,7 @@ import { REF } from '../../data/circuit/markers';
 import { sectorOf } from '../../data/circuit/corners';
 import type { Selection } from '../../data/types';
 import { useAppStore, type VisualMode } from '../../store/useAppStore';
-import { asphaltTextures, gravelTexture } from '../materials/textures';
+import { asphaltTextures, gravelMaps } from '../materials/textures';
 import { styleOf } from '../modes/modeStyles';
 import { patchTrackMaterial } from '../materials/patch';
 import { getWorld } from '../world/world';
@@ -94,6 +94,16 @@ function asphaltMaterial(mode: VisualMode) {
         .replace('#include <begin_vertex>', '#include <begin_vertex>\nvRub = aExtra;');
       shader.fragmentShader = shader.fragmentShader
         .replace('#include <common>', '#include <common>\nvarying float vRub;')
+        .replace(
+          '#include <map_fragment>',
+          st.asphaltTexture
+            ? `#include <map_fragment>
+// variação de grande escala (manchas de desgaste) com o próprio mapa em outras escalas: quebra a repetição nas retas
+float i3dBig = texture2D(map, vMapUv * 0.0531).g;
+float i3dMed = texture2D(map, vMapUv * 0.2371 + vec2(0.37, 0.11)).g;
+diffuseColor.rgb *= (0.82 + 0.55 * i3dBig) * (0.9 + 0.3 * i3dMed);`
+            : '#include <map_fragment>',
+        )
         .replace('#include <color_fragment>', `#include <color_fragment>
 diffuseColor.rgb *= 1.0 - clamp(vRub, 0.0, 1.0) * 0.42 * ${rub};`)
         .replace('#include <roughnessmap_fragment>', `#include <roughnessmap_fragment>
@@ -140,8 +150,10 @@ function runoffMaterial(mode: VisualMode, kind: RunoffKind) {
     const tex = st.runoffTextured;
     const m = new THREE.MeshStandardMaterial({
       color: kind === 'paint' ? st.runoffPaint : kind === 'gravel' ? st.runoffGravel : st.runoffConcrete,
-      map: kind === 'gravel' ? (tex ? gravelTexture() : null) : tex ? t.map : null,
-      normalMap: tex && kind === 'asphalt' ? t.normalMap : null,
+      map: kind === 'gravel' ? (tex ? gravelMaps().map : null) : tex ? t.map : null,
+      normalMap: tex && kind === 'asphalt' ? t.normalMap : tex && kind === 'gravel' ? gravelMaps().normalMap : null,
+      normalScale: new THREE.Vector2(0.8, 0.8),
+      roughnessMap: tex && kind === 'asphalt' ? t.roughnessMap : null,
       roughness: kind === 'gravel' ? 1 : 0.85,
       metalness: 0,
       flatShading: false,

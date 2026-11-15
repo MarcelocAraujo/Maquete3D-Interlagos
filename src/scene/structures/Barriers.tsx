@@ -5,6 +5,7 @@ import { TRACK, TRACK_LENGTH, frameAt, nearestS, wrapS } from '../../data/circui
 import { getWorld } from '../world/world';
 import { useAppStore, type VisualMode } from '../../store/useAppStore';
 import { structMat } from '../materials/structureMaterials';
+import { tyreMaps } from '../materials/textures';
 import { computeRunoffs, envelope, hash, runoffDepthAt } from '../track/geometry';
 import { insideStand, standClearance } from './standLayout';
 import { polylineWall } from './polylineStrip';
@@ -245,8 +246,13 @@ function tyreMaterial(mode: VisualMode) {
     const m = base.clone();
     m.vertexColors = true;
     m.color.set('#ffffff');
-    m.roughness = mode === 'sim' ? 0.92 : 0.8;
-    m.flatShading = mode === 'game';
+    m.roughness = mode === 'sim' ? 0.95 : 0.85;
+    m.flatShading = false;
+    // borracha: sulcos circunferenciais e grão (normal + rugosidade); no cartoon, mais suave
+    const tm = tyreMaps();
+    m.normalMap = tm.normalMap;
+    m.normalScale = new THREE.Vector2(mode === 'sim' ? 1 : 0.5, mode === 'sim' ? 1 : 0.5);
+    m.roughnessMap = tm.roughnessMap;
     m.onBeforeCompile = base.onBeforeCompile;
     m.customProgramCacheKey = () => `tyre-stack-${mode}`;
     matCache.set(k, m);

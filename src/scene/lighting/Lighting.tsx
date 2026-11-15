@@ -94,7 +94,8 @@ export function Lighting() {
     sceneUniforms.uNight.value = time === 'night' ? 1 : 0;
   }, [preset, scene, gl, time]);
 
-  const mapSize = quality === 'high' ? 2048 : 1024;
+  // 4096 no perfil alto (≈0,5 m/texel na visão geral, 5 cm de perto), 2048 no médio
+  const mapSize = quality === 'high' ? 4096 : 2048;
   const castShadows = shadowsOn && quality !== 'low';
 
   // a sombra acompanha o alvo da câmera, com área proporcional à distância
@@ -104,7 +105,8 @@ export function Lighting() {
     const ctl = controls as unknown as { getTarget?: (v: THREE.Vector3) => THREE.Vector3; distance?: number } | null;
     const t = ctl?.getTarget ? ctl.getTarget(new THREE.Vector3()) : new THREE.Vector3();
     const dist = ctl?.distance ?? 1000;
-    const half = THREE.MathUtils.clamp(dist * 0.85, 90, 1300);
+    // área da sombra proporcional à distância da câmera, mais justa que antes (menos texels desperdiçados)
+    const half = THREE.MathUtils.clamp(dist * 0.72, 60, 1250);
     // encaixa o alvo em uma grade de texels para evitar tremulação
     const texel = (half * 2) / mapSize;
     t.x = Math.round(t.x / texel) * texel;
@@ -123,7 +125,7 @@ export function Lighting() {
       cam.updateProjectionMatrix();
     }
     l.shadow.bias = styleOf(mode).shadowBias;
-    l.shadow.normalBias = half / 400;
+    l.shadow.normalBias = half / 520;
   });
 
   const sunPos = useMemo(() => preset.sun.clone().multiplyScalar(4000), [preset]);

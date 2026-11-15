@@ -72,9 +72,13 @@ function terrainMaterial(mode: VisualMode, size: number) {
       .replace(
         '#include <map_fragment>',
         `#include <map_fragment>
+float i3dD0 = texture2D(uDetail, vI3dW.xz / 1.3).r;
 float i3dD1 = texture2D(uDetail, vI3dW.xz / 5.0).r;
 float i3dD2 = texture2D(uDetail, vI3dW.xz / 41.0).r;
-diffuseColor.rgb *= mix(1.0, (0.68 + 0.45 * i3dD1) * (0.82 + 0.25 * i3dD2), ${strength.toFixed(2)});`,
+// três escalas (folhas, touceiras, manchas) e variação de tom: trechos mais secos/amarelados
+float i3dDet = (0.8 + 0.3 * i3dD0) * (0.74 + 0.4 * i3dD1) * (0.84 + 0.24 * i3dD2);
+vec3 i3dTint = mix(vec3(1.0), vec3(1.07, 1.02, 0.86), clamp((i3dD2 - 0.45) * 2.2, 0.0, 1.0) * 0.6);
+diffuseColor.rgb *= mix(vec3(1.0), i3dDet * i3dTint, ${strength.toFixed(2)});`,
       )
       .replace(
         '#include <opaque_fragment>',
@@ -96,7 +100,7 @@ export function Terrain() {
   const { height } = getWorld();
   const H = height.meta.half - 5;
 
-  const texSize = quality === 'high' ? 4096 : 2048;
+  const texSize = quality === 'low' ? 2048 : 4096; // 4096 ≈ 0,75 m/pixel; o detalhe de perto vem da textura multiplicativa
   const step = quality === 'high' ? 5 : quality === 'medium' ? 7 : 10;
 
   // malha detalhada só sobre o autódromo + margem; entorno em malha grossa (apenas no modo realista)
