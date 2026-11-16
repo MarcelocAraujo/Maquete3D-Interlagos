@@ -50,14 +50,22 @@ function buildStand(g: GrandstandInfo, secs: StandSection[]): StandGeo {
     bx /= bl;
     bz /= bl;
     const mid: XZ = [(sec.a[0] + sec.b[0]) / 2, (sec.a[1] + sec.b[1]) / 2];
+    // base = terreno mais baixo em toda a pegada (frente e fundo): nada da arquibancada fica enterrado
     let groundFront = Infinity;
+    let groundMax = -Infinity;
     for (let k = 0; k <= 4; k++) {
       const t = k / 4;
-      const x = sec.a[0] + (sec.b[0] - sec.a[0]) * t;
-      const z = sec.a[1] + (sec.b[1] - sec.a[1]) * t;
-      groundFront = Math.min(groundFront, height.sample(x, z));
+      for (const back of [0, sec.depth * 0.5, sec.depth]) {
+        const x = sec.a[0] + (sec.b[0] - sec.a[0]) * t + sec.back[0] * back;
+        const z = sec.a[1] + (sec.b[1] - sec.a[1]) * t + sec.back[1] * back;
+        const h = height.sample(x, z);
+        groundFront = Math.min(groundFront, h);
+        groundMax = Math.max(groundMax, h);
+      }
     }
-    const podium = g.temporary ? 1.6 : 2.6;
+    // embasamento de concreto do nível mais baixo até o mais alto do terreno
+    const plinth = groundMax - groundFront + 0.4;
+    const podium = (g.temporary ? 1.6 : 2.6) + plinth;
     const rows = Math.max(6, Math.floor((sec.depth - 3) / ROW_D));
     const D = rows * ROW_D + 2;
     const top = podium + rows * ROW_H;

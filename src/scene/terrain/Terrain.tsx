@@ -1,6 +1,7 @@
 import { useMemo } from 'react';
 import * as THREE from 'three';
 import { getWorld } from '../world/world';
+import { TRACK } from '../../data/circuit/track';
 import { groundTexture } from './groundTexture';
 import { useAppStore } from '../../store/useAppStore';
 import { detailTexture } from '../materials/textures';
@@ -43,6 +44,27 @@ export function buildTerrainGeometry(x0: number, x1: number, z0: number, z1: num
       const d = c + 1;
       idx.push(a, c, b, b, c, d);
     }
+  // rebaixa os vértices sob a pista e sob o pit lane: a malha regular, mais grossa que o
+  // heightfield, interpolava acima do asfalto em encostas (pista "debaixo da terra")
+  const sx = (x1 - x0) / (nx - 1);
+  const sz = (z1 - z0) / (nz - 1);
+  const lower = (x: number, z: number, y: number, radius: number) => {
+    const i0 = Math.max(0, Math.floor((x - radius - x0) / sx));
+    const i1 = Math.min(nx - 1, Math.ceil((x + radius - x0) / sx));
+    const j0 = Math.max(0, Math.floor((z - radius - z0) / sz));
+    const j1 = Math.min(nz - 1, Math.ceil((z + radius - z0) / sz));
+    for (let j = j0; j <= j1; j++)
+      for (let i = i0; i <= i1; i++) {
+        const k = j * nx + i;
+        const d = Math.hypot(pos[k * 3] - x, pos[k * 3 + 2] - z);
+        if (d > radius) continue;
+        const t = Math.min(1, Math.max(0, (d - radius * 0.55) / (radius * 0.45)));
+        const target = y - 0.12 + t * 0.12;
+        if (pos[k * 3 + 1] > target) pos[k * 3 + 1] = Math.min(pos[k * 3 + 1], target + t * (pos[k * 3 + 1] - target));
+      }
+  };
+  for (let i = 0; i < TRACK.n; i += 3) lower(TRACK.x[i], TRACK.z[i], TRACK.y[i], Math.max(TRACK.wl[i], TRACK.wr[i]) + 4);
+  for (let i = 0; i < TRACK.pit.x.length; i += 2) lower(TRACK.pit.x[i], TRACK.pit.z[i], TRACK.pit.y[i], 8);
   const g = new THREE.BufferGeometry();
   g.setAttribute('position', new THREE.BufferAttribute(pos, 3));
   g.setAttribute('uv', new THREE.BufferAttribute(uv, 2));

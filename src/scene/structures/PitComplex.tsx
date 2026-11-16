@@ -244,7 +244,7 @@ export function PitComplex() {
   const lane = useMemo(() => {
     const { height } = getWorld();
     const pit = TRACK.pit;
-    const allPts: [number, number, number][] = pit.x.map((x, i) => [x, pit.y[i] + 0.02, pit.z[i]]);
+    const allPts: [number, number, number][] = pit.x.map((x, i) => [x, Math.max(pit.y[i], height.sample(x, pit.z[i]) - 0.3) + 0.05, pit.z[i]]);
     // Nas pontas, o eixo do pit lane do OSM corre sobre a borda da pista por ~200 m
     // (entrada na Curva 15, saída na Reta Oposta). A faixa do pit termina onde
     // encosta na pista; dali em diante, a junção é marcada na própria pista.

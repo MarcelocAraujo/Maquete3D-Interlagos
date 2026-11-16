@@ -243,7 +243,7 @@ export function computeRunoffs(): RunoffZone[] {
   type Spec = { depth: number; paint?: number; surface: RunoffSurface; barrier: RunoffBarrier; pre?: number; post?: number; fitStands?: boolean };
   const spec: Record<number, Spec> = {
     // S do Senna: escape grande do fim do Setor M até a Curva do Sol, com a tela junto às arquibancadas
-    1: { depth: 42, surface: 'asphalt', barrier: 'tyreWallFence', pre: -12, post: 100, fitStands: true },
+    1: { depth: 42, surface: 'asphalt', barrier: 'tyreWallFence', pre: -12, post: 30, fitStands: true },
     2: { depth: 9, surface: 'grass', barrier: 'tyreFence', pre: 5, post: 15 },
     // Curva do Sol: sem zebra externa nem faixa pintada — linha branca e grama
     3: { depth: 11, paint: 0, surface: 'grass', barrier: 'tyreFence', pre: 0, post: 25 },
@@ -281,11 +281,20 @@ export function computeRunoffs(): RunoffZone[] {
 
 /** Profundidade da área de escape em s (limitada pela frente das arquibancadas quando fitStands). */
 export function runoffDepthAt(z: RunoffZone, s: number): number {
-  if (!z.fitStands) return z.depth;
+  // do lado interno de uma curva, a faixa deslocada dobra sobre si mesma quando a
+  // profundidade passa do raio: limita a 70% do raio de curvatura local (média de ±12 m)
+  let kMax = 0;
+  for (let d = -12; d <= 12; d += 3) {
+    const f = frameAt(wrapS(s + d));
+    const inside = z.side * f.k > 0; // k > 0 = curva à esquerda → lado interno = esquerdo (side 1)
+    if (inside) kMax = Math.max(kMax, Math.abs(f.k));
+  }
+  const byRadius = kMax > 1e-4 ? Math.max(4, 0.5 / kMax - 8) : Infinity;
+  if (!z.fitStands) return Math.min(z.depth, byRadius);
   // menor folga numa janela de ±9 m (contorno suave, sem degraus entre seções)
   let c = Infinity;
   for (let d = -9; d <= 9; d += 1.5) c = Math.min(c, standClearance(wrapS(s + d), z.side));
-  return Math.max(6, Math.min(z.depth, c - 3.6));
+  return Math.max(4, Math.min(z.depth, c - 3.6, byRadius));
 }
 
 /**

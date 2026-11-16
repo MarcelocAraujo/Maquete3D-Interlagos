@@ -118,9 +118,30 @@ roughnessFactor *= 1.0 - clamp(vRub, 0.0, 1.0) * 0.25 * ${rub};`);
 function kerbMaterial(mode: VisualMode) {
   return trackMat('kerb', mode, () => {
     const st = styleOf(mode).track;
-    const tex = stripeTexture([...st.kerb]);
-    const m = new THREE.MeshStandardMaterial({ map: tex, roughness: st.kerbRoughness, metalness: 0, polygonOffset: true, polygonOffsetFactor: -2, polygonOffsetUnits: -2 });
-    return patchTrackMaterial(m, { rim: false, key: `kerb-${mode}` });
+    const m = new THREE.MeshStandardMaterial({ color: '#ffffff', roughness: st.kerbRoughness, metalness: 0, polygonOffset: true, polygonOffsetFactor: -2, polygonOffsetUnits: -2 });
+    patchTrackMaterial(m, { rim: false, key: `kerb-${mode}` });
+    // Listras verde/amarelo calculadas no shader (1,2 m cada) com antisserrilhado analítico:
+    // a textura 1×2 anterior perdia o amarelo (ficava preta) em certos ângulos por causa
+    // dos mipmaps/anisotropia; à distância as listras se fundem na cor média.
+    const prev = m.onBeforeCompile;
+    const ca = new THREE.Color(st.kerb[0]);
+    const cb = new THREE.Color(st.kerb[1]);
+    const v3 = (c: THREE.Color) => `vec3(${c.r.toFixed(4)}, ${c.g.toFixed(4)}, ${c.b.toFixed(4)})`;
+    m.onBeforeCompile = (shader, r) => {
+      prev.call(m, shader, r);
+      shader.fragmentShader = shader.fragmentShader.replace(
+        '#include <color_fragment>',
+        `#include <color_fragment>
+float i3dKs = vS / 1.2;
+float i3dKw = fwidth(i3dKs);
+float i3dKf = fract(i3dKs);
+float i3dStripe = smoothstep(0.0, i3dKw, i3dKf) * (1.0 - smoothstep(0.5 - i3dKw, 0.5, i3dKf));
+i3dStripe = mix(i3dStripe, 0.5, clamp(i3dKw * 2.0 - 0.3, 0.0, 1.0));
+diffuseColor.rgb = mix(${v3(ca)}, ${v3(cb)}, i3dStripe);`,
+      );
+    };
+    m.customProgramCacheKey = () => `track-kerb-${mode}`;
+    return m;
   });
 }
 
