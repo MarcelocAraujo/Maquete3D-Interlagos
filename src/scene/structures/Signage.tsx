@@ -19,6 +19,23 @@ import { onHoverEvent, onSelectEvent } from '../selection/events';
  * placas e cones no lugar dos procedurais.
  */
 const BRAKE_CORNERS = [1, 4, 10, 12];
+const BOARD_TILT = (18 * Math.PI) / 180;
+
+/** Cunha (prisma triangular) de 1,6 m de largura e 1,1 m de altura, base de 0,75 m, face frontal em +Z. */
+function wedgeGeometry() {
+  const W = 0.8;
+  const H = 1.1;
+  const zf = 0.2 + Math.tan(BOARD_TILT) * 0; // aresta inferior da face
+  const zt = zf - Math.tan(BOARD_TILT) * H; // topo da face (recuado)
+  const zb = -0.55; // fundo
+  const shape = new THREE.Shape([new THREE.Vector2(zb, 0), new THREE.Vector2(zf, 0), new THREE.Vector2(zt, H), new THREE.Vector2(zb, H * 0.9)]);
+  const g = new THREE.ExtrudeGeometry(shape, { depth: W * 2, bevelEnabled: false });
+  // perfil no plano XY (x = profundidade, y = altura), extrudado em Z → passa a largura para X e a profundidade para Z
+  g.translate(0, 0, -W);
+  g.rotateY(-Math.PI / 2);
+  g.computeVertexNormals();
+  return g;
+}
 const DISTANCES = [150, 100, 50];
 
 function boardTexture(n: number) {
@@ -87,8 +104,11 @@ export function Signage() {
         const w = side === 1 ? f.wl : f.wr;
         const x = f.x + f.lx * side * (w + 2); // do lado da pista, antes de muros e telas
         const z = f.z + f.lz * side * (w + 2);
-        const ang = Math.atan2(-f.tz, f.tx); // placa voltada para quem chega
-        boards.push({ n: d, m: new THREE.Matrix4().makeRotationY(ang + Math.PI / 2).setPosition(x, height.sample(x, z), z) });
+        // frente (+Z local) voltada para quem chega: normal = -tangente da pista
+        const zAx = new THREE.Vector3(-f.tx, 0, -f.tz).normalize();
+        const yAx = new THREE.Vector3(0, 1, 0);
+        const xAx = new THREE.Vector3().crossVectors(yAx, zAx);
+        boards.push({ n: d, m: new THREE.Matrix4().makeBasis(xAx, yAx, zAx).setPosition(x, height.sample(x, z) - 0.03, z) });
       }
     }
     // faixas no alambrado do lado das arquibancadas da reta (s > 3820 ou s < 300)
@@ -131,14 +151,18 @@ export function Signage() {
     // placas de distância (sempre procedurais: o número importa)
     for (const d of DISTANCES) {
       const list = data.boards.filter((b) => b.n === d);
-      const panel = new THREE.PlaneGeometry(2.4, 1.8).translate(0, 2.9, 0);
+      // painel na face inclinada da cunha (1,6 × 1,05 m, inclinado 18° para trás)
+      const panel = new THREE.PlaneGeometry(1.5, 0.98);
+      panel.rotateX(-BOARD_TILT);
+      panel.translate(0, 0.53, 0.2 - Math.tan(BOARD_TILT) * 0.53 + 0.012);
       const mesh = new THREE.InstancedMesh(panel, texMat(`board${d}`, () => boardTexture(d), mode), list.length);
       list.forEach((b, i) => mesh.setMatrixAt(i, b.m));
       mesh.instanceMatrix.needsUpdate = true;
       mesh.computeBoundingSphere();
       out.push(mesh);
     }
-    const posts = mergeGeometries([new THREE.BoxGeometry(0.1, 2.1, 0.1).translate(-0.9, 1.05, -0.04), new THREE.BoxGeometry(0.1, 2.1, 0.1).translate(0.9, 1.05, -0.04), new THREE.BoxGeometry(2.5, 1.9, 0.06).translate(0, 2.9, -0.05)]);
+    // corpo da placa: cunha apoiada direto na grama (sem pés), como as placas de frenagem da F1
+    const posts = wedgeGeometry();
     const postMesh = new THREE.InstancedMesh(posts, structMat(mode, 'darkMetal'), data.boards.length);
     data.boards.forEach((b, i) => postMesh.setMatrixAt(i, b.m));
     postMesh.instanceMatrix.needsUpdate = true;
