@@ -27,6 +27,7 @@ export function BottomBar() {
   const cam = useAppStore((s) => s.camera);
   const selection = useAppStore((s) => s.selection);
   const mode = useAppStore((s) => s.mode);
+  const fps = useAppStore((s) => s.fps);
   const explore = useAppStore((s) => s.explore);
 
   const info = useMemo(() => {
@@ -73,6 +74,7 @@ export function BottomBar() {
         <span>
           Selecionado: <span className="text-white">{shortName(selection)}</span>
         </span>
+        <span className="tabular-nums text-ink-400" title="Quadros por segundo (média do último segundo)">{fps > 0 ? `${fps} fps` : '— fps'}</span>
         <span className="rounded bg-white/[0.06] px-1.5 py-0.5 font-display text-[10px] font-bold tracking-widest text-ink-200">{explore ? 'EXPLORAÇÃO' : mode === 'game' ? 'GAME' : 'SIMULATION'}</span>
       </span>
     </footer>

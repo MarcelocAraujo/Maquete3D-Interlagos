@@ -45,8 +45,18 @@ function RendererSetup() {
     });
   }, [gl, scene, mode, ready]);
   let frames = 0;
+  let fpsN = 0;
+  let fpsT = 0;
   useFrame((_, dt) => {
     trackUniforms.uTime.value += dt;
+    // FPS médio por segundo (barra inferior)
+    fpsN++;
+    fpsT += dt;
+    if (fpsT >= 1) {
+      useAppStore.getState().setFps(Math.round(fpsN / fpsT));
+      fpsN = 0;
+      fpsT = 0;
+    }
     if (frames < 6) {
       frames++;
       if (import.meta.env.DEV) console.info(`[i3d] frame ${frames} @ ${performance.now().toFixed(0)} ms`);

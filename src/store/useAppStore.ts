@@ -78,6 +78,9 @@ interface AppState {
   camera: CameraState;
   snapshot: string | null;
   snapshotRequested: VisualMode | null;
+  /** quadros por segundo (média do último segundo) */
+  fps: number;
+  setFps: (v: number) => void;
   shadows: boolean;
   ao: boolean;
 
@@ -143,6 +146,7 @@ export const useAppStore = create<AppState>((set, get) => ({
   camera: { position: [0, 0, 0], target: [0, 0, 0], distance: 0, azimuth: 0 },
   snapshot: null,
   snapshotRequested: null,
+  fps: 0,
   shadows: true,
   ao: true,
 
@@ -190,4 +194,5 @@ export const useAppStore = create<AppState>((set, get) => ({
   setCamera: (c) => set({ camera: c }),
   setShadows: (v) => set({ shadows: v }),
   setAO: (v) => set({ ao: v }),
+  setFps: (v) => set({ fps: v }),
 }));
