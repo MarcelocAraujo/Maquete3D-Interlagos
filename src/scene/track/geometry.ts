@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import { TRACK, TRACK_LENGTH, frameAt, rangeLength, wrapS, type TrackFrame } from '../../data/circuit/track';
+import { TRACK, TRACK_LENGTH, frameAt, nearestS, rangeLength, wrapS, type TrackFrame } from '../../data/circuit/track';
 import { CORNERS } from '../../data/circuit/corners';
 import { standClearance } from '../structures/standLayout';
 
@@ -228,6 +228,15 @@ export interface RunoffZone {
   barrier: RunoffBarrier;
   /** a barreira vai até perto das arquibancadas (profundidade = alvo máximo) */
   fitStands?: boolean;
+  /**
+   * Contorno externo = fecho convexo dos pontos deslocados: a área atravessa o lado
+   * interno da curva seguinte sem dobrar (S do Senna: a cerca corta reto até a Curva do Sol).
+   * depthAt dá a profundidade-alvo por s antes do fecho.
+   */
+  hull?: boolean;
+  depthAt?: (s: number) => number;
+  /** a partir deste s a barreira muda de tipo (ex.: concreto só na Curva 1) */
+  barrierAfter?: [number, RunoffBarrier];
   corner?: number;
   label: string;
 }
@@ -240,13 +249,14 @@ export interface RunoffZone {
  * guard-rail atrás no miolo. Na Laranjinha, muro de concreto. Profundidades = estimativa.
  */
 export function computeRunoffs(): RunoffZone[] {
-  type Spec = { depth: number; paint?: number; surface: RunoffSurface; barrier: RunoffBarrier; pre?: number; post?: number; fitStands?: boolean };
+  type Spec = { depth: number; paint?: number; surface: RunoffSurface; barrier: RunoffBarrier; pre?: number; post?: number; fitStands?: boolean; hull?: boolean; depthAt?: (s: number) => number; barrierAfter?: [number, RunoffBarrier] };
   const spec: Record<number, Spec> = {
     // S do Senna: escape grande do fim do Setor M até a Curva do Sol, com a tela junto às arquibancadas
-    1: { depth: 42, surface: 'asphalt', barrier: 'tyreWallFence', pre: -12, post: 30, fitStands: true },
+    // S do Senna + Curva do Sol (lado direito): uma só área asfaltada do fim do Setor M até a
+    // Curva do Sol; o contorno é o fecho convexo, então a cerca corta reto por fora do miolo
+    // da Curva 2 (carros que passam reto na frenagem da Curva 1 cortam o S por ali)
+    1: { depth: 42, surface: 'asphalt', barrier: 'tyreWallFence', pre: -12, post: 405, fitStands: true, hull: true, depthAt: (s) => (s < 470 ? 42 : s < 560 ? 42 - ((s - 470) / 90) * 31 : 11), barrierAfter: [480, 'tyreFence'] },
     2: { depth: 9, surface: 'grass', barrier: 'tyreFence', pre: 5, post: 15 },
-    // Curva do Sol: sem zebra externa nem faixa pintada — linha branca e grama
-    3: { depth: 11, paint: 0, surface: 'grass', barrier: 'tyreFence', pre: 0, post: 25 },
     4: { depth: 30, surface: 'gravel', barrier: 'tyreFence', pre: 30, post: 10 },
     5: { depth: 11, surface: 'grass', barrier: 'tyreRail', pre: 0, post: 25 },
     6: { depth: 14, surface: 'grass', barrier: 'tyreRail', pre: 10, post: 10 },
@@ -270,6 +280,9 @@ export function computeRunoffs(): RunoffZone[] {
       depth: sp.depth,
       paint: Math.max(0, Math.min(sp.paint ?? 3, sp.depth - 1)),
       fitStands: sp.fitStands,
+      hull: sp.hull,
+      depthAt: sp.depthAt,
+      barrierAfter: sp.barrierAfter,
       surface: sp.surface,
       barrier: sp.barrier,
       corner: c.number,
@@ -279,8 +292,104 @@ export function computeRunoffs(): RunoffZone[] {
   return zones;
 }
 
+/** Tipo de barreira em s (zonas com troca de tipo ao longo do trecho). */
+export function runoffBarrierAt(z: RunoffZone, s: number): RunoffBarrier {
+  return z.barrierAfter && wrapS(s - z.s0) > wrapS(z.barrierAfter[0] - z.s0) ? z.barrierAfter[1] : z.barrier;
+}
+
+/** Profundidade-alvo (antes do fecho convexo e do limite por raio). */
+function targetDepth(z: RunoffZone, s: number): number {
+  let d = z.depthAt ? z.depthAt(s) : z.depth;
+  if (z.fitStands) {
+    let c = Infinity;
+    for (let k = -9; k <= 9; k += 1.5) c = Math.min(c, standClearance(wrapS(s + k), z.side));
+    d = Math.min(d, c - 3.6);
+  }
+  return Math.max(4, d);
+}
+
+/** Ponto na borda da pista (0,3 m além da largura) deslocado `lat` para o lado da zona. */
+function edgePoint(z: RunoffZone, s: number, lat: number): [number, number] {
+  const f = frameAt(wrapS(s));
+  const w = z.side === 1 ? f.wl : f.wr;
+  return [f.x + f.lx * z.side * (w + 0.3 + lat), f.z + f.lz * z.side * (w + 0.3 + lat)];
+}
+
+const hullCache = new Map<RunoffZone, [number, number][]>();
+/**
+ * Contorno externo de uma zona "hull": fecho convexo (cadeia monótona) dos pontos
+ * deslocados, do início ao fim da zona, só pelo lado de fora.
+ */
+export function runoffHull(z: RunoffZone): [number, number][] {
+  if (hullCache.has(z)) return hullCache.get(z)!;
+  const len = rangeLength(z.s0, z.s1);
+  const pts: [number, number][] = [];
+  for (let d = 0; d <= len; d += 2) {
+    const s = wrapS(z.s0 + d);
+    pts.push(edgePoint(z, s, 0));
+    pts.push(edgePoint(z, s, targetDepth(z, s)));
+  }
+  const sorted = [...pts].sort((a, b) => a[0] - b[0] || a[1] - b[1]);
+  const cross = (o: [number, number], a: [number, number], b: [number, number]) => (a[0] - o[0]) * (b[1] - o[1]) - (a[1] - o[1]) * (b[0] - o[0]);
+  const lower: [number, number][] = [];
+  for (const p of sorted) {
+    while (lower.length >= 2 && cross(lower[lower.length - 2], lower[lower.length - 1], p) <= 0) lower.pop();
+    lower.push(p);
+  }
+  const upper: [number, number][] = [];
+  for (let i = sorted.length - 1; i >= 0; i--) {
+    const p = sorted[i];
+    while (upper.length >= 2 && cross(upper[upper.length - 2], upper[upper.length - 1], p) <= 0) upper.pop();
+    upper.push(p);
+  }
+  const hull = lower.slice(0, -1).concat(upper.slice(0, -1));
+  // cadeia entre a ponta inicial e a final que fica do lado de fora (passa pelos pontos deslocados)
+  const a = edgePoint(z, z.s0, 0);
+  const b = edgePoint(z, z.s1, 0);
+  const near = (p: [number, number]) => (i: number) => Math.hypot(hull[i][0] - p[0], hull[i][1] - p[1]);
+  const ia = hull.map((_, i) => i).reduce((best, i) => (near(a)(i) < near(a)(best) ? i : best), 0);
+  const ib = hull.map((_, i) => i).reduce((best, i) => (near(b)(i) < near(b)(best) ? i : best), 0);
+  const chainFrom = (dir: 1 | -1) => {
+    const out: [number, number][] = [];
+    for (let i = ia; ; i = (i + dir + hull.length) % hull.length) {
+      out.push(hull[i]);
+      if (i === ib) break;
+      if (out.length > hull.length) break;
+    }
+    return out;
+  };
+  const c1 = chainFrom(1);
+  const c2 = chainFrom(-1);
+  // a cadeia de fora é a que passa mais longe da pista
+  const far = (c: [number, number][]) => c.reduce((m, p) => Math.max(m, nearestS(p[0], p[1]).d), 0);
+  const chain = far(c1) > far(c2) ? c1 : c2;
+  hullCache.set(z, chain);
+  return chain;
+}
+
 /** Profundidade da área de escape em s (limitada pela frente das arquibancadas quando fitStands). */
 export function runoffDepthAt(z: RunoffZone, s: number): number {
+  if (z.hull) {
+    // interseção do raio normal (a partir da borda) com o contorno convexo
+    const chain = runoffHull(z);
+    const o = edgePoint(z, s, 0);
+    const p1 = edgePoint(z, s, 1);
+    const dx = p1[0] - o[0];
+    const dz = p1[1] - o[1];
+    let best = Infinity;
+    for (let i = 0; i < chain.length - 1; i++) {
+      const [ax, az] = chain[i];
+      const [bx, bz] = chain[i + 1];
+      const ex = bx - ax;
+      const ez = bz - az;
+      const den = dx * ez - dz * ex;
+      if (Math.abs(den) < 1e-9) continue;
+      const t = ((ax - o[0]) * ez - (az - o[1]) * ex) / den;
+      const u = ((ax - o[0]) * dz - (az - o[1]) * dx) / den;
+      if (t >= 0 && u >= 0 && u <= 1) best = Math.min(best, t);
+    }
+    return best === Infinity ? Math.max(4, targetDepth(z, s)) : Math.max(1, best);
+  }
   // do lado interno de uma curva, a faixa deslocada dobra sobre si mesma quando a
   // profundidade passa do raio: limita a 70% do raio de curvatura local (média de ±12 m)
   let kMax = 0;
@@ -290,11 +399,7 @@ export function runoffDepthAt(z: RunoffZone, s: number): number {
     if (inside) kMax = Math.max(kMax, Math.abs(f.k));
   }
   const byRadius = kMax > 1e-4 ? Math.max(4, 0.5 / kMax - 8) : Infinity;
-  if (!z.fitStands) return Math.min(z.depth, byRadius);
-  // menor folga numa janela de ±9 m (contorno suave, sem degraus entre seções)
-  let c = Infinity;
-  for (let d = -9; d <= 9; d += 1.5) c = Math.min(c, standClearance(wrapS(s + d), z.side));
-  return Math.max(4, Math.min(z.depth, c - 3.6, byRadius));
+  return Math.min(targetDepth(z, s), byRadius);
 }
 
 /**

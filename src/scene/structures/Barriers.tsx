@@ -6,7 +6,7 @@ import { getWorld } from '../world/world';
 import { useAppStore, type VisualMode } from '../../store/useAppStore';
 import { structMat } from '../materials/structureMaterials';
 import { tyreMaps } from '../materials/textures';
-import { computeRunoffs, envelope, hash, runoffDepthAt } from '../track/geometry';
+import { computeRunoffs, envelope, hash, runoffBarrierAt, runoffDepthAt } from '../track/geometry';
 import { insideStand, standClearance } from './standLayout';
 import { polylineWall } from './polylineStrip';
 import { getAssets, instanceProto, modulesAlong, type AssetProto } from '../assets/assetLibrary';
@@ -119,7 +119,7 @@ function computeRuns(): Run[] {
         if (e > 0) {
           off = Math.max(off, 0.3 + runoffDepthAt(z, s) * e + 0.8);
           if (e > 0.3) {
-            type = z.barrier;
+            type = runoffBarrierAt(z, s);
             inRunoff = true;
           }
         }

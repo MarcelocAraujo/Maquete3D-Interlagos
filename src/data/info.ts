@@ -1,5 +1,5 @@
 import type { Fact, Reliability, Selection } from './types';
-import { cornerById } from './circuit/corners';
+import { CORNERS, cornerById } from './circuit/corners';
 import { straightById } from './circuit/straights';
 import { sectorById } from './circuit/sectors';
 import { FACILITIES, GRANDSTANDS, MARSHAL_POST_INFO, PIT_GARAGES } from './facilities';
@@ -7,7 +7,7 @@ import { SPECIES_LABEL, type Species } from '../scene/vegetation/Trees';
 import { buildingRegistry, buildingTop } from '../scene/buildings/Buildings';
 import { polyArea } from '../scene/world/world';
 import { computeRunoffs } from '../scene/track/geometry';
-import { altitude } from './circuit/track';
+import { altitude, wrapS } from './circuit/track';
 
 const f = (label: string, value: string, reliability: Reliability, sources?: string[], note?: string): Fact => ({ label, value, reliability, sources, note });
 
@@ -184,7 +184,9 @@ export function getInfo(sel: Selection): InfoView | null {
     }
     case 'runoff': {
       const n = Number(sel.id.split('-')[1]);
-      const z = computeRunoffs().find((r) => r.corner === n);
+      const zones = computeRunoffs();
+      const c = CORNERS.find((x) => x.number === n);
+      const z = zones.find((r) => r.corner === n) ?? (c ? zones.find((r) => wrapS(c.apexS - r.s0) <= wrapS(r.s1 - r.s0)) : undefined);
       return {
         kindLabel: 'Área de escape',
         title: z ? z.label : 'Área de escape',

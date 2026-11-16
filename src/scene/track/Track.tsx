@@ -1,8 +1,9 @@
 import { useMemo } from 'react';
 import * as THREE from 'three';
 import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js';
+import { TessellateModifier } from 'three/examples/jsm/modifiers/TessellateModifier.js';
 import type { ThreeEvent } from '@react-three/fiber';
-import { TRACK, TRACK_LENGTH, frameAt, nearestS, wrapS } from '../../data/circuit/track';
+import { TRACK, TRACK_LENGTH, frameAt, nearestS, rangeLength, wrapS } from '../../data/circuit/track';
 import { cornerAt } from '../../data/circuit/corners';
 import { straightAt } from '../../data/circuit/straights';
 import { REF } from '../../data/circuit/markers';
@@ -14,7 +15,7 @@ import { styleOf } from '../modes/modeStyles';
 import { patchTrackMaterial } from '../materials/patch';
 import { getWorld } from '../world/world';
 import { pitExitProfile } from '../structures/PitComplex';
-import { SAUSAGE_CORNERS, runoffDepthAt, buildStrip, brakingFactor, computeKerbs, computeRunoffs, envelope, hash, racingLine } from './geometry';
+import { SAUSAGE_CORNERS, runoffDepthAt, runoffHull, buildStrip, brakingFactor, computeKerbs, computeRunoffs, envelope, hash, racingLine } from './geometry';
 import { onHoverEvent, onSelectEvent } from '../selection/events';
 
 /** Resolve o elemento da pista a partir de um ponto clicado. */
@@ -339,6 +340,47 @@ function useTrackGeometries() {
     for (const z of zones) {
       if (z.paint > 0) paints.push(band(z, () => 0.3, (e) => 0.3 + z.paint * Math.min(1, e * 3), 8, 0.06, 2));
       if (z.surface === 'grass') continue;
+      if (z.hull) {
+        // polígono: borda da pista (s0→s1) + contorno convexo de volta, 1,5 m antes da barreira
+        const chain = runoffHull(z);
+        const inner: [number, number][] = [];
+        const len = rangeLength(z.s0, z.s1);
+        for (let d = 0; d <= len; d += 2) {
+          const f = frameAt(wrapS(z.s0 + d));
+          const w = z.side === 1 ? f.wl : f.wr;
+          const lat = w + 0.3 + z.paint - 0.2;
+          inner.push([f.x + f.lx * z.side * lat, f.z + f.lz * z.side * lat]);
+        }
+        // contorno recuado 1,5 m para dentro (em direção à pista)
+        const cx = inner.reduce((a, p) => a + p[0], 0) / inner.length;
+        const cz = inner.reduce((a, p) => a + p[1], 0) / inner.length;
+        const outer = chain.map(([x, zz]) => {
+          const dx = cx - x;
+          const dz = cz - zz;
+          const l = Math.hypot(dx, dz) || 1;
+          return [x + (dx / l) * 1.5, zz + (dz / l) * 1.5] as [number, number];
+        });
+        const ring = [...inner, ...[...outer].reverse()];
+        const shape = new THREE.Shape(ring.map(([x, zz]) => new THREE.Vector2(x, -zz)));
+        // tesselado em triângulos de até 6 m para acompanhar o relevo
+        const g = new TessellateModifier(6, 8).modify(new THREE.ShapeGeometry(shape, 1).toNonIndexed());
+        g.rotateX(-Math.PI / 2);
+        // subdivide para drapear no relevo: ShapeGeometry é plana → usa só os vértices do contorno;
+        // para o terreno suave da região, basta drapear os vértices
+        const pos = g.getAttribute('position') as THREE.BufferAttribute;
+        const uv = new Float32Array(pos.count * 2);
+        for (let i = 0; i < pos.count; i++) {
+          uv[i * 2] = pos.getX(i) / 7;
+          uv[i * 2 + 1] = pos.getZ(i) / 7;
+        }
+        g.setAttribute('uv', new THREE.BufferAttribute(uv, 2));
+        for (const name of ['aS', 'aLat', 'aExtra']) g.setAttribute(name, new THREE.BufferAttribute(new Float32Array(pos.count), 1));
+        // índice sequencial: mergeGeometries exige todas indexadas (as faixas são)
+        g.setIndex(Array.from({ length: pos.count }, (_, i) => i));
+        drape(g, 0.12);
+        asphalts.push(g);
+        continue;
+      }
       // superfície até ~1,5 m antes da barreira
       const reach = (e: number, s: number) => 0.3 + z.paint + Math.max(0.01, (runoffDepthAt(z, s) - z.paint - 1.5) * e);
       (z.surface === 'gravel' ? gravels : asphalts).push(band(z, () => 0.3 + z.paint - 0.2, reach, 25, 0.04, 6));
