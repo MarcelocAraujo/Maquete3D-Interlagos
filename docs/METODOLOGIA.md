@@ -63,4 +63,30 @@ Distâncias das FIA Event Notes 2022 aplicadas a partir do início da via OSM nu
 - Edificações (até 13 mil) mescladas em uma malha por grupo, com picking por faixa de triângulos.
 - Árvores, assentos, postes, portas de garagem e torres em `InstancedMesh`.
 - Raycast acelerado por BVH (`<Bvh>`), materiais e programas de shader compartilhados (chaves de cache únicas).
-- Qualidade baixa/média/alta: resolução do terreno (10/6/4 m), mapa de sombras (off/2048/4096), densidade de vegetação (30/60/100%), raio do entorno (800/1200/1450 m), assentos 3D (off/metade/todos), AO.
+- Qualidade baixa/média/alta: resolução do terreno (10/7/5 m), mapa de sombras (off/2048/4096), densidade de vegetação (30/60/100%), assentos 3D (off/metade/todos), AO (off/performance/medium).
+
+### Anti-aliasing e resolução
+
+- A cena é renderizada num alvo intermediário pelo compositor de pós-processamento; por isso o MSAA do canvas (`antialias`) não tem efeito e fica desligado.
+- **MSAA no alvo do compositor** (`multisampling`): 0× no perfil baixo, 2× no médio, 4× no alto. Resolve as bordas geométricas (postes, telas, zebras, beirais) — o SMAA sozinho não recupera detalhes menores que um pixel.
+- **SMAA** no fim da cadeia (MEDIUM/HIGH/ULTRA por perfil, detecção por cor), para bordas de textura e de sombra.
+- **Resolução de renderização**: em monitores comuns (`devicePixelRatio` = 1) os perfis médio e alto renderizam a 1,25× e 1,5× e o navegador reduz para a tela (sobreamostragem). Em telas HiDPI o teto é 1,5× / 2×. Antes, o intervalo `[1, 1,5]` virava 1 nessas telas e nada era sobreamostrado.
+- **Filtragem anisotrópica** no máximo que a GPU oferece (16×) em todas as texturas, com mipmaps trilineares: menos borrão e cintilação em ângulos rasos (pista e solo vistos de longe).
+
+### Texturas procedurais (`src/scene/materials/textures.ts`)
+
+Todas tileáveis, geradas uma vez na carga; cor, normal e rugosidade derivam do mesmo mapa de altura.
+
+| Material | Resolução | Mapas | Observações |
+|---|---|---|---|
+| Asfalto | 1024 px / 7 m | cor, normal, rugosidade | agregado fino, manchas em três escalas, pedriscos salientes, juntas seladas; o shader da pista soma duas variações de grande escala para a repetição não aparecer nas retas |
+| Grama/terreno | 512 px (detalhe multiplicativo) | cor | amostrado em três escalas (1,3 / 5 / 41 m) sobre o mapa de solo de 4096 px (≈0,75 m/pixel), com variação de tom (trechos mais secos) |
+| Concreto | 512 px | cor, normal, rugosidade | reboco com grão, poros, escorrimentos verticais, variação de placa |
+| Telha cerâmica | 512 px / 12 m | cor, normal, rugosidade | 32 fiadas de telha canal; o atributo `aTile` por vértice escolhe entre telha e cobertura plana no mesmo material |
+| Fachadas | 512 px | cor, emissivo | caixilhos, peitoris, vidro com gradiente; faixas de vidro nos prédios do complexo |
+| Pneus | 128 px | normal, rugosidade | sulcos circunferenciais na banda, grão de borracha, relevo no flanco |
+| Metais (guard-rail, postes) | 256 px | rugosidade | escovado ao longo da peça (só no SIMULATION) |
+| Tela de alambrado | 256 px | cor + alfa | fio suavizado sobre fundo translúcido (visível à distância, sem cintilar) |
+| Brita | 512 px | cor, normal | grãos claros/escuros com relevo |
+
+No GAME MODE os mesmos mapas entram com intensidade menor (sem normal nas telhas, relevo dos pneus pela metade), preservando as facetas limpas.

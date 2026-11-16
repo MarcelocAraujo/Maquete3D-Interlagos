@@ -246,7 +246,7 @@ function tyreMaterial(mode: VisualMode) {
     const m = base.clone();
     m.vertexColors = true;
     m.color.set('#ffffff');
-    m.roughness = mode === 'sim' ? 0.95 : 0.85;
+    m.roughness = mode === 'sim' ? 0.86 : 0.85;
     m.flatShading = false;
     // borracha: sulcos circunferenciais e grão (normal + rugosidade); no cartoon, mais suave
     const tm = tyreMaps();

@@ -47,7 +47,7 @@ npm run data:build
 - **Câmera**: rotação 360°, zoom em direção ao cursor, pan, vistas superior/lateral/frontal/isométrica, Visão Geral, foco cinematográfico, colisão com o terreno, **modo exploração** (WASD/QE).
 - **Camadas** (14) e **identificações** 3D com nível de detalhe por distância.
 - **Análise de desempenho** (velocidades oficiais 2022/2025, perfil de altitude, setores, raios), **história** (linha do tempo, traçados, S do Senna, José Carlos Pace) e **fontes**.
-- **Qualidade gráfica** baixa/média/alta.
+- **Qualidade gráfica** baixa/média/alta: MSAA 0/2/4× + SMAA, renderização a 1×/1,25×/1,5× em monitores comuns, sombras 0/2048/4096, AO. Texturas procedurais PBR (asfalto, concreto, telhas, fachadas, pneus, metal) — detalhes em [docs/METODOLOGIA.md](docs/METODOLOGIA.md).
 
 ## Modelos do pacote RCC Design (opcional)
 
